@@ -1,0 +1,18 @@
+services:
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file: .env
+    environment:
+      # Use development locally so session cookies work over plain http://localhost.
+      # In production, run behind HTTPS and set NODE_ENV=production.
+      NODE_ENV: development
+    volumes:
+      - abhinayam-data:/app/data
+      - abhinayam-uploads:/app/uploads
+    restart: unless-stopped
+
+volumes:
+  abhinayam-data:
+  abhinayam-uploads:

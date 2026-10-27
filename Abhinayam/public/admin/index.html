@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin | Abhinayam Silks</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin">
+  <!-- Login -->
+  <section id="login-view" class="login hidden">
+    <form id="login-form" class="panel">
+      <img src="/images/logo.svg" alt="Abhinayam Silks" width="220" height="66">
+      <h1 id="login-title">Admin login</h1>
+      <div id="login-error" class="alert alert-error hidden" role="alert"></div>
+      <div class="field"><label for="l-user">Username</label><input id="l-user" name="username" required autocomplete="username"></div>
+      <div class="field"><label for="l-pass">Password</label><input id="l-pass" name="password" type="password" required autocomplete="current-password"></div>
+      <button class="btn btn-block" type="submit">Log in</button>
+    </form>
+  </section>
+
+  <!-- App -->
+  <div id="app-view" class="admin-shell hidden">
+    <aside class="admin-nav">
+      <img src="/images/logo.svg" alt="Abhinayam Silks" width="180" height="54">
+      <p class="who" id="who"></p>
+      <nav id="tabs">
+        <button data-tab="dashboard" data-roles="admin">📊 Dashboard</button>
+        <button data-tab="products" data-roles="admin">🥻 Sarees</button>
+        <button data-tab="stock" data-roles="admin staff">📦 Stock</button>
+        <button data-tab="categories" data-roles="admin">🗂️ Categories</button>
+        <button data-tab="orders" data-roles="admin">🧾 Orders</button>
+        <button data-tab="settings" data-roles="admin">⚙️ Website settings</button>
+        <button data-tab="users" data-roles="admin">👥 Staff access</button>
+        <button data-tab="account" data-roles="admin">🔐 Account</button>
+      </nav>
+      <a href="/" target="_blank" class="view-site">View website ↗</a>
+      <button id="logout" class="btn btn-outline btn-block">Log out</button>
+    </aside>
+
+    <main class="admin-main">
+      <!-- Dashboard -->
+      <section data-panel="dashboard">
+        <h1>Dashboard</h1>
+        <div class="stats" id="stats"></div>
+        <h2>Low stock (2 or fewer)</h2>
+        <div id="low-stock"></div>
+      </section>
+
+      <!-- Products -->
+      <section data-panel="products" class="hidden">
+        <div class="panel-head">
+          <h1>Sarees</h1>
+          <div class="row-inline">
+            <input type="search" id="product-search" placeholder="Search name / SKU…">
+            <button class="btn" id="add-product">+ Add saree</button>
+          </div>
+        </div>
+        <div class="table-wrap"><table class="table" id="products-table"></table></div>
+      </section>
+
+      <!-- Stock (admin + staff) -->
+      <section data-panel="stock" class="hidden">
+        <div class="panel-head">
+          <h1>Stock</h1>
+          <div class="row-inline">
+            <input type="search" id="stock-search" placeholder="Search name / SKU / colour…">
+            <label class="check"><input type="checkbox" id="stock-low"> Low stock only (2 or fewer)</label>
+          </div>
+        </div>
+        <p class="muted">Enter the new quantity, add an optional note (e.g. “New delivery”, “Damaged”), then click Save. Every change is recorded below.</p>
+        <div class="table-wrap"><table class="table" id="stock-table"></table></div>
+        <h2>Recent stock changes</h2>
+        <div class="table-wrap"><table class="table" id="stock-history"></table></div>
+      </section>
+
+      <!-- Staff access (admin) -->
+      <section data-panel="users" class="hidden">
+        <div class="panel-head"><h1>Staff access</h1><button class="btn" id="add-user">+ Add user</button></div>
+        <p class="muted">Staff log in at <a href="/staff" target="_blank">/staff</a> and admins at <a href="/admin/">/admin</a>. Each login page only accepts its own role. <strong>Staff</strong> can only view and update stock and cannot change their own password; reset it here with <strong>Edit</strong>. <strong>Admins</strong> can manage everything. Deactivated users are logged out immediately.</p>
+        <div class="table-wrap"><table class="table" id="users-table"></table></div>
+      </section>
+
+      <!-- Categories -->
+      <section data-panel="categories" class="hidden">
+        <div class="panel-head"><h1>Categories</h1><button class="btn" id="add-category">+ Add category</button></div>
+        <div class="table-wrap"><table class="table" id="categories-table"></table></div>
+      </section>
+
+      <!-- Orders -->
+      <section data-panel="orders" class="hidden">
+        <div class="panel-head">
+          <h1>Orders</h1>
+          <div class="row-inline">
+            <input type="search" id="order-search" placeholder="Order no / name / phone">
+            <select id="order-status">
+              <option value="">All statuses</option>
+              <option value="new">New</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="shipped">Shipped</option>
+              <option value="delivered">Delivered</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap"><table class="table" id="orders-table"></table></div>
+      </section>
+
+      <!-- Settings -->
+      <section data-panel="settings" class="hidden">
+        <h1>Website settings</h1>
+        <p class="muted">Update contact details, payment info and page content. Changes appear on the website immediately.</p>
+        <form id="settings-form" class="panel"></form>
+      </section>
+
+      <!-- Account -->
+      <section data-panel="account" class="hidden">
+        <h1>Account</h1>
+        <form id="password-form" class="panel narrow">
+          <h2>Change password</h2>
+          <div class="field"><label for="p-cur">Current password</label><input id="p-cur" name="currentPassword" type="password" required autocomplete="current-password"></div>
+          <div class="field"><label for="p-new">New password (min 8 characters)</label><input id="p-new" name="newPassword" type="password" minlength="8" required autocomplete="new-password"></div>
+          <button class="btn" type="submit">Update password</button>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <!-- Product dialog -->
+  <dialog id="product-dialog">
+    <form id="product-form" method="dialog">
+      <h2 id="product-dialog-title">Add saree</h2>
+      <div class="alert alert-error hidden" data-error></div>
+      <div class="grid-2">
+        <div class="field"><label>Name *</label><input name="name" required maxlength="150"></div>
+        <div class="field"><label>SKU / Product code *</label><input name="sku" required maxlength="40"></div>
+        <div class="field"><label>Category</label><select name="category_id"></select></div>
+        <div class="field"><label>Fabric</label><input name="fabric" maxlength="60" list="fabric-list" placeholder="e.g. Pure Silk"></div>
+        <div class="field"><label>Colour</label><input name="color" maxlength="40" list="color-list" placeholder="e.g. Maroon"></div>
+        <div class="field"><label>Stock quantity *</label><input name="stock_qty" type="number" min="0" step="1" required></div>
+        <div class="field"><label>Price (₹) *</label><input name="price" type="number" min="0" step="1" required></div>
+        <div class="field"><label>MRP (₹) – optional, shows strike-through</label><input name="mrp" type="number" min="0" step="1"></div>
+      </div>
+      <div class="field"><label>Description</label><textarea name="description" rows="4" maxlength="5000"></textarea></div>
+      <div class="row-inline">
+        <label class="check"><input type="checkbox" name="is_active" checked> Visible on website</label>
+        <label class="check"><input type="checkbox" name="is_featured"> Featured on home page</label>
+      </div>
+      <div class="field"><label>Photos (JPG/PNG/WEBP, max 5 MB each, up to 8)</label><input name="images" type="file" accept="image/jpeg,image/png,image/webp" multiple></div>
+      <div class="image-list" id="existing-images"></div>
+      <div class="dialog-actions">
+        <button class="btn btn-outline" type="button" data-close>Cancel</button>
+        <button class="btn" type="submit">Save</button>
+      </div>
+    </form>
+    <datalist id="fabric-list"></datalist>
+    <datalist id="color-list"></datalist>
+  </dialog>
+
+  <!-- Category dialog -->
+  <dialog id="category-dialog">
+    <form id="category-form" method="dialog">
+      <h2 id="category-dialog-title">Add category</h2>
+      <div class="alert alert-error hidden" data-error></div>
+      <div class="field"><label>Name *</label><input name="name" required maxlength="80"></div>
+      <div class="field"><label>Description</label><textarea name="description" rows="3" maxlength="1000"></textarea></div>
+      <div class="field"><label>Display order</label><input name="sort_order" type="number" step="1" value="0"></div>
+      <div class="field"><label>Cover image (optional)</label><input name="image" type="file" accept="image/jpeg,image/png,image/webp"></div>
+      <div class="dialog-actions">
+        <button class="btn btn-outline" type="button" data-close>Cancel</button>
+        <button class="btn" type="submit">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Order dialog -->
+  <dialog id="order-dialog">
+    <form id="order-form" method="dialog">
+      <h2>Order <span id="od-no"></span></h2>
+      <div class="alert alert-error hidden" data-error></div>
+      <div id="od-body"></div>
+      <div class="grid-2">
+        <div class="field"><label>Order status</label>
+          <select name="status"><option>new</option><option>confirmed</option><option>shipped</option><option>delivered</option><option>cancelled</option></select>
+        </div>
+        <div class="field"><label>Payment status</label>
+          <select name="payment_status"><option>pending</option><option>paid</option><option>refunded</option></select>
+        </div>
+        <div class="field"><label>UPI transaction / reference no.</label><input name="payment_ref" maxlength="100"></div>
+        <div class="field"><label>Courier &amp; tracking info</label><input name="tracking_info" maxlength="300"></div>
+      </div>
+      <p class="muted">Cancelling an order puts its sarees back into stock.</p>
+      <div class="dialog-actions">
+        <a class="btn btn-wa" id="od-wa" target="_blank" rel="noopener" href="#">WhatsApp customer</a>
+        <button class="btn btn-outline" type="button" data-close>Close</button>
+        <button class="btn" type="submit">Update order</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- User dialog -->
+  <dialog id="user-dialog">
+    <form id="user-form" method="dialog">
+      <h2 id="user-dialog-title">Add user</h2>
+      <div class="alert alert-error hidden" data-error></div>
+      <div class="field"><label for="u-name">Full name</label><input id="u-name" name="display_name" maxlength="80" placeholder="e.g. Lakshmi"></div>
+      <div class="field"><label for="u-user">Username *</label><input id="u-user" name="username" required maxlength="40" pattern="[A-Za-z0-9._@\-]+" autocomplete="off"></div>
+      <div class="field"><label for="u-role">Access level</label>
+        <select id="u-role" name="role">
+          <option value="staff">Staff – stock only</option>
+          <option value="admin">Admin – full access</option>
+        </select>
+      </div>
+      <div class="field"><label for="u-pass" id="u-pass-label">Password * (min 8 characters)</label><input id="u-pass" name="password" type="password" minlength="8" autocomplete="new-password"></div>
+      <label class="check"><input type="checkbox" name="is_active" checked> Active (can log in)</label>
+      <div class="dialog-actions">
+        <button class="btn btn-outline" type="button" data-close>Cancel</button>
+        <button class="btn" type="submit">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="/js/admin.js"></script>
+</body>
+</html>

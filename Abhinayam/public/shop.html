@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shop Silk Sarees Online | Abhinayam Silks</title>
+  <meta name="description" content="Browse pure silk sarees by fabric, colour, price and category. Kanjivaram, Banarasi, soft silk, tussar and cotton silk sarees at Abhinayam Silks.">
+  <link rel="canonical" href="/shop">
+  <meta name="theme-color" content="#6e1423">
+  <link rel="icon" href="/images/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Poppins:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="site-header"></div>
+
+  <div class="page-head"><h1>Shop Sarees</h1><p>Find the perfect drape for every occasion</p></div>
+
+  <main class="section container">
+    <div class="shop">
+      <aside class="filters" id="filters" aria-label="Filters">
+        <h3>Filter</h3>
+        <form id="filter-form">
+          <div class="field"><label for="f-q">Search</label><input id="f-q" name="q" type="search" placeholder="Name, colour, fabric…"></div>
+          <div class="field"><label for="f-category">Category</label><select id="f-category" name="category"><option value="">All categories</option></select></div>
+          <div class="field"><label for="f-fabric">Fabric</label><select id="f-fabric" name="fabric"><option value="">All fabrics</option></select></div>
+          <div class="field"><label for="f-color">Colour</label><select id="f-color" name="color"><option value="">All colours</option></select></div>
+          <div class="row">
+            <div class="field"><label for="f-min">Min ₹</label><input id="f-min" name="minPrice" type="number" min="0" step="100"></div>
+            <div class="field"><label for="f-max">Max ₹</label><input id="f-max" name="maxPrice" type="number" min="0" step="100"></div>
+          </div>
+          <label class="check"><input type="checkbox" name="inStock" value="1"> In stock only</label>
+          <button class="btn btn-block" type="submit">Apply filters</button>
+          <button class="btn btn-outline btn-block mt-sm" type="reset" id="reset">Clear all</button>
+        </form>
+      </aside>
+
+      <section>
+        <div class="shop-toolbar">
+          <button class="btn btn-outline filters-toggle" id="filters-toggle">☰ Filters</button>
+          <span class="muted" id="result-count"></span>
+          <div class="field mb-0">
+            <select id="sort" name="sort" aria-label="Sort by">
+              <option value="featured">Sort: Featured</option>
+              <option value="newest">Newest first</option>
+              <option value="price_asc">Price: Low to High</option>
+              <option value="price_desc">Price: High to Low</option>
+              <option value="name">Name A–Z</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid" id="products"></div>
+        <nav class="pagination" id="pagination" aria-label="Pagination"></nav>
+      </section>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+  <script src="/js/common.js"></script>
+  <script src="/js/shop.js"></script>
+</body>
+</html>

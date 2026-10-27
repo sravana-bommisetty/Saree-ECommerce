@@ -1,0 +1,62 @@
+body.admin { background: #f6f1e8; }
+.login { min-height: 100vh; display: grid; place-items: center; padding: 20px; }
+.login form { width: min(380px, 100%); text-align: center; }
+.login img { margin: 0 auto 10px; }
+.login .field { text-align: left; }
+
+.admin-shell { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+.admin-nav { background: var(--ivory); border-right: 1px solid var(--line); padding: 20px 16px; display: flex; flex-direction: column; gap: 14px;
+  position: sticky; top: 0; height: 100vh; }
+.admin-nav nav { display: flex; flex-direction: column; gap: 4px; }
+.admin-nav nav button { text-align: left; background: none; border: 0; padding: 10px 12px; border-radius: 10px; font: 500 .95rem var(--sans); cursor: pointer; color: var(--ink); }
+.admin-nav nav button.active, .admin-nav nav button:hover { background: var(--maroon); color: #fff; }
+.view-site { margin-top: auto; font-size: .9rem; }
+.admin-main { padding: 28px clamp(16px, 3vw, 40px); overflow-x: hidden; }
+.panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.row-inline { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.row-inline input, .row-inline select { font: inherit; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.narrow { max-width: 460px; }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 28px; }
+.stat { background: var(--ivory); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+.stat b { display: block; font-size: 1.6rem; color: var(--maroon); font-family: var(--serif); }
+.stat span { color: var(--muted); font-size: .85rem; text-transform: capitalize; }
+
+.table-wrap { overflow-x: auto; background: var(--ivory); border: 1px solid var(--line); border-radius: var(--radius); }
+.table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.table th, .table td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+.table th { background: #f3ebdd; font-weight: 600; white-space: nowrap; }
+.table img { width: 44px; height: 58px; object-fit: cover; border-radius: 6px; }
+.table .stock-input { width: 70px; padding: 6px; border: 1px solid var(--line); border-radius: 8px; }
+.table .btn { padding: 6px 12px; font-size: .8rem; }
+.pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .75rem; font-weight: 600; text-transform: capitalize; background: #eee; }
+.pill.new { background: #fff3cd; color: #7a5a00; }
+.pill.confirmed, .pill.paid { background: #e7f4ee; color: var(--green); }
+.pill.shipped { background: #e3edfb; color: #1d4f91; }
+.pill.delivered { background: #d9f2e3; color: #11643a; }
+.pill.cancelled, .pill.refunded, .pill.off { background: #fdecea; color: var(--danger); }
+.pill.pending { background: #fff3cd; color: #7a5a00; }
+.pill.live, .pill.active { background: #e7f4ee; color: var(--green); }
+.pill.disabled { background: #fdecea; color: var(--danger); }
+.pill.admin { background: #f3e6ee; color: #7a1f4b; }
+.pill.staff { background: #e3edfb; color: #1d4f91; }
+.table .stock-note { width: 160px; padding: 6px; border: 1px solid var(--line); border-radius: 8px; }
+.table b.low { color: var(--danger); }
+.who { margin: 0; font-size: .85rem; opacity: .85; }
+
+dialog { border: 0; border-radius: var(--radius); padding: 24px; width: min(760px, 94vw); box-shadow: 0 20px 60px rgba(0,0,0,.3); background: var(--ivory); }
+dialog::backdrop { background: rgba(43, 32, 36, .55); }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.image-list { display: flex; gap: 10px; flex-wrap: wrap; }
+.image-list figure { margin: 0; position: relative; }
+.image-list img { width: 80px; height: 106px; object-fit: cover; border-radius: 8px; }
+.image-list button { position: absolute; top: 4px; right: 4px; border: 0; border-radius: 50%; width: 24px; height: 24px; background: var(--danger); color: #fff; cursor: pointer; }
+.order-items { width: 100%; margin: 10px 0 16px; }
+
+@media (max-width: 800px) {
+  .admin-shell { grid-template-columns: 1fr; }
+  .admin-nav { position: static; height: auto; }
+  .admin-nav nav { flex-direction: row; flex-wrap: wrap; }
+  .grid-2 { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8a2131"/>
+      <stop offset="1" stop-color="#4a0d18"/>
+    </linearGradient>
+    <pattern id="butta" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M20 8 C26 16 26 24 20 30 C14 24 14 16 20 8 Z" fill="#c9a14a" opacity=".35"/>
+    </pattern>
+  </defs>
+  <rect width="300" height="400" fill="url(#bg)"/>
+  <rect width="300" height="400" fill="url(#butta)"/>
+  <rect x="0" y="330" width="300" height="70" fill="#c9a14a" opacity=".9"/>
+  <path d="M0 340 H300 M0 390 H300" stroke="#6e1423" stroke-width="3"/>
+  <path d="M10 365 l12 -15 l12 15 l12 -15 l12 15 l12 -15 l12 15 l12 -15 l12 15 l12 -15 l12 15 l12 -15 l12 15 l12 -15 l12 15 l12 -15 l12 15 l12 -15 l12 15 l12 -15 l12 15 l12 -15 l12 15 l12 -15 l12 15" fill="none" stroke="#6e1423" stroke-width="2.5"/>
+  <text x="150" y="190" text-anchor="middle" font-family="Georgia, serif" font-size="22" fill="#e8d3a0">Abhinayam Silks</text>
+  <text x="150" y="218" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#e8d3a0" opacity=".8">Photo coming soon</text>
+</svg>
