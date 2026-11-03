@@ -6,22 +6,34 @@ const ROOT = path.resolve(__dirname, '..');
 
 function loadConfig(env = process.env) {
   const isProd = env.NODE_ENV === 'production';
+  
+  // DATABASE_URL is now REQUIRED (for both dev and prod)
+  const databaseUrl = env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error(
+      'DATABASE_URL environment variable is required.\n' +
+      'Set your PostgreSQL/Neon connection string:\n' +
+      'export DATABASE_URL="postgresql://user:password@host/dbname"'
+    );
+  }
+  
   let sessionSecret = env.SESSION_SECRET;
   if (!sessionSecret) {
     if (isProd) throw new Error('SESSION_SECRET must be set in production');
     sessionSecret = crypto.randomBytes(32).toString('hex');
   }
+  
   return {
     isProd,
     port: Number(env.PORT) || 3000,
     baseUrl: (env.PUBLIC_BASE_URL || `http://localhost:${Number(env.PORT) || 3000}`).replace(/\/$/, ''),
-    dbFile: env.DB_FILE === ':memory:' ? ':memory:' : path.resolve(ROOT, env.DB_FILE || 'data/abhinayam.db'),
+    databaseUrl,  // ALWAYS use PostgreSQL
     uploadDir: path.resolve(ROOT, env.UPLOAD_DIR || 'uploads'),
     publicDir: path.join(ROOT, 'public'),
     sessionSecret,
     admin: {
       username: env.ADMIN_USERNAME || 'admin',
-      password: env.ADMIN_PASSWORD || (isProd ? '' : 'ChangeMe@123'),
+      password: env.ADMIN_PASSWORD || '',
     },
     defaults: {
       store_name: 'Abhinayam Silks',

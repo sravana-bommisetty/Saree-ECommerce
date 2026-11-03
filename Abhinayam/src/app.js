@@ -9,9 +9,9 @@ const { ensureAdmin } = require('./auth');
 const seo = require('./seo');
 const { HttpError } = require('./lib/validate');
 
-function createApp({ db, config }) {
-  ensureSettings(db, config.defaults);
-  ensureAdmin(db, config.admin);
+async function createApp({ db, config }) {
+  await ensureSettings(db, config.defaults);
+  await ensureAdmin(db, config.admin);
 
   const app = express();
   app.disable('x-powered-by');
@@ -50,8 +50,8 @@ function createApp({ db, config }) {
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found' }));
 
   app.get('/robots.txt', (_req, res) => res.type('text/plain').send(seo.robotsTxt(config.baseUrl)));
-  app.get('/sitemap.xml', (_req, res) => res.type('application/xml').send(seo.sitemapXml(db, config.baseUrl)));
-  app.get('/saree/:slug', (req, res) => res.type('html').send(seo.productPage(db, config, req.params.slug)));
+  app.get('/sitemap.xml', async (_req, res) => res.type('application/xml').send(await seo.sitemapXml(db, config.baseUrl)));
+  app.get('/saree/:slug', async (req, res) => res.type('html').send(await seo.productPage(db, config, req.params.slug)));
 
   // Staff portal shares the admin single-page app; admin.js adapts to the URL.
   app.get(['/staff', '/staff/'], (_req, res) => res.sendFile('admin/index.html', { root: config.publicDir }));
@@ -66,9 +66,9 @@ function createApp({ db, config }) {
     let status = err instanceof HttpError ? err.status : err.status || err.statusCode || 500;
     let message = err.message;
     if (err.name === 'MulterError') { status = 400; }
-    if (/UNIQUE constraint failed/.test(err.message)) {
+    if (err.code === '23505' || /UNIQUE constraint failed/.test(err.message)) {
       status = 409;
-      message = `An item with the same ${err.message.split('.').pop()} already exists`;
+      message = 'An item with the same unique value already exists';
     }
     if (status >= 500) {
       console.error(err);

@@ -42,20 +42,20 @@ function parseItems(items) {
 function createOrder(db, { customer, items }) {
   const c = parseCustomer(customer);
   const wanted = parseItems(items);
-  return transaction(db, () => {
+  return transaction(db, async () => {
     const lines = [];
-    for (const [productId, qty] of wanted) {
-      const p = db.prepare('SELECT id, sku, name, price, stock_qty FROM products WHERE id = ? AND is_active = 1').get(productId);
+    for (const [productId, qty] of [...wanted].sort(([first], [second]) => first - second)) {
+      const p = await db.prepare('SELECT id, sku, name, price, stock_qty FROM products WHERE id = ? AND is_active = TRUE FOR UPDATE').get(productId);
       if (!p) throw badRequest(`Saree #${productId} is no longer available`);
       if (p.stock_qty < qty) throw new HttpError(409, `Only ${p.stock_qty} left of "${p.name}"`);
       lines.push({ product_id: p.id, product_name: p.name, sku: p.sku, unit_price: p.price, qty });
     }
     const total = lines.reduce((sum, l) => sum + l.unit_price * l.qty, 0);
     const orderNo = newOrderNo();
-    const { lastInsertRowid: orderId } = db
+    const { lastInsertRowid: orderId } = await db
       .prepare(
         `INSERT INTO orders (order_no, customer_name, phone, address, city, pincode, notes, total)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`
       )
       .run(orderNo, c.customer_name, c.phone, c.address, c.city, c.pincode, c.notes, total);
     const insertItem = db.prepare(
@@ -63,17 +63,17 @@ function createOrder(db, { customer, items }) {
     );
     const decrement = db.prepare('UPDATE products SET stock_qty = stock_qty - ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
     for (const l of lines) {
-      insertItem.run(orderId, l.product_id, l.product_name, l.sku, l.unit_price, l.qty);
-      decrement.run(l.qty, l.product_id);
+      await insertItem.run(orderId, l.product_id, l.product_name, l.sku, l.unit_price, l.qty);
+      await decrement.run(l.qty, l.product_id);
     }
     return getOrder(db, Number(orderId));
   });
 }
 
-function getOrder(db, id) {
-  const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
+async function getOrder(db, id) {
+  const order = await db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
   if (!order) throw notFound('Order not found');
-  order.items = db.prepare('SELECT * FROM order_items WHERE order_id = ? ORDER BY id').all(id);
+  order.items = await db.prepare('SELECT * FROM order_items WHERE order_id = ? ORDER BY id').all(id);
   return order;
 }
 
@@ -95,19 +95,20 @@ function listOrders(db, { status, q } = {}) {
     .all(...params);
 }
 
-function updateOrder(db, id, body = {}) {
-  const order = getOrder(db, id);
-  const status = body.status !== undefined ? oneOf(body.status, 'status', ORDER_STATUSES) : order.status;
-  const paymentStatus =
-    body.payment_status !== undefined ? oneOf(body.payment_status, 'payment_status', PAYMENT_STATUSES) : order.payment_status;
-  if (order.status === 'cancelled' && status !== 'cancelled') throw badRequest('Cancelled orders cannot be re-opened');
+async function updateOrder(db, id, body = {}) {
+  return transaction(db, async () => {
+    await db.prepare('SELECT id FROM orders WHERE id = ? FOR UPDATE').get(id);
+    const order = await getOrder(db, id);
+    const status = body.status !== undefined ? oneOf(body.status, 'status', ORDER_STATUSES) : order.status;
+    const paymentStatus =
+      body.payment_status !== undefined ? oneOf(body.payment_status, 'payment_status', PAYMENT_STATUSES) : order.payment_status;
+    if (order.status === 'cancelled' && status !== 'cancelled') throw badRequest('Cancelled orders cannot be re-opened');
 
-  return transaction(db, () => {
     if (status === 'cancelled' && order.status !== 'cancelled') {
       const restock = db.prepare('UPDATE products SET stock_qty = stock_qty + ? WHERE id = ?');
-      for (const it of order.items) if (it.product_id) restock.run(it.qty, it.product_id);
+      for (const it of order.items) if (it.product_id) await restock.run(it.qty, it.product_id);
     }
-    db.prepare(
+    await db.prepare(
       `UPDATE orders SET status = ?, payment_status = ?, payment_ref = ?, tracking_info = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
     ).run(
       status,
@@ -120,15 +121,15 @@ function updateOrder(db, id, body = {}) {
   });
 }
 
-function dashboardStats(db) {
+async function dashboardStats(db) {
   const byStatus = Object.fromEntries(ORDER_STATUSES.map((s) => [s, 0]));
-  for (const r of db.prepare('SELECT status, COUNT(*) AS n FROM orders GROUP BY status').all()) byStatus[r.status] = r.n;
+  for (const row of await db.prepare('SELECT status, COUNT(*) AS n FROM orders GROUP BY status').all()) byStatus[row.status] = row.n;
   return {
     orders: byStatus,
-    revenue_paid: db.prepare("SELECT COALESCE(SUM(total), 0) AS v FROM orders WHERE payment_status = 'paid'").get().v,
-    products: db.prepare('SELECT COUNT(*) AS n FROM products').get().n,
-    low_stock: db
-      .prepare('SELECT id, sku, name, stock_qty FROM products WHERE is_active = 1 AND stock_qty <= 2 ORDER BY stock_qty, name')
+    revenue_paid: (await db.prepare("SELECT COALESCE(SUM(total), 0) AS v FROM orders WHERE payment_status = 'paid'").get()).v,
+    products: (await db.prepare('SELECT COUNT(*) AS n FROM products').get()).n,
+    low_stock: await db
+      .prepare('SELECT id, sku, name, stock_qty FROM products WHERE is_active = TRUE AND stock_qty <= 2 ORDER BY stock_qty, name')
       .all(),
   };
 }

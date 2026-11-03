@@ -29,23 +29,23 @@ const EDITABLE_KEYS = [
   ...Object.keys(CONTENT_DEFAULTS),
 ];
 
-function ensureSettings(db, defaults) {
-  const insert = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
-  for (const [key, value] of Object.entries({ ...defaults, ...CONTENT_DEFAULTS })) insert.run(key, value);
+async function ensureSettings(db, defaults) {
+  const insert = db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO NOTHING');
+  for (const [key, value] of Object.entries({ ...defaults, ...CONTENT_DEFAULTS })) await insert.run(key, value);
 }
 
-function getSettings(db) {
+async function getSettings(db) {
   const out = {};
-  for (const row of db.prepare('SELECT key, value FROM settings').all()) out[row.key] = row.value;
+  for (const row of await db.prepare('SELECT key, value FROM settings').all()) out[row.key] = row.value;
   return out;
 }
 
-function updateSettings(db, input) {
+async function updateSettings(db, input) {
   const upsert = db.prepare(
     'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'
   );
   for (const key of EDITABLE_KEYS) {
-    if (input[key] !== undefined) upsert.run(key, str(input[key], key, { max: 5000 }));
+    if (input[key] !== undefined) await upsert.run(key, str(input[key], key, { max: 5000 }));
   }
   return getSettings(db);
 }

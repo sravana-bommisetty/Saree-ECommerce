@@ -15,12 +15,12 @@ const SORTS = {
 
 /* ---------- Categories ---------- */
 
-function listCategories(db, { includeEmpty = true } = {}) {
-  const rows = db
+async function listCategories(db, { includeEmpty = true } = {}) {
+  const rows = await db
     .prepare(
       `SELECT c.*, COUNT(p.id) AS product_count
          FROM categories c
-         LEFT JOIN products p ON p.category_id = c.id AND p.is_active = 1
+         LEFT JOIN products p ON p.category_id = c.id AND p.is_active = TRUE
         GROUP BY c.id
         ORDER BY c.sort_order, c.name`
     )
@@ -38,26 +38,26 @@ function parseCategory(body) {
   };
 }
 
-function createCategory(db, body, imageUrl = null) {
+async function createCategory(db, body, imageUrl = null) {
   const c = parseCategory(body);
-  const { lastInsertRowid } = db
-    .prepare('INSERT INTO categories (name, slug, description, image_url, sort_order) VALUES (?, ?, ?, ?, ?)')
+  const { lastInsertRowid } = await db
+    .prepare('INSERT INTO categories (name, slug, description, image_url, sort_order) VALUES (?, ?, ?, ?, ?) RETURNING id')
     .run(c.name, c.slug, c.description, imageUrl, c.sort_order);
   return db.prepare('SELECT * FROM categories WHERE id = ?').get(lastInsertRowid);
 }
 
-function updateCategory(db, id, body, imageUrl = null) {
-  const existing = db.prepare('SELECT * FROM categories WHERE id = ?').get(id);
+async function updateCategory(db, id, body, imageUrl = null) {
+  const existing = await db.prepare('SELECT * FROM categories WHERE id = ?').get(id);
   if (!existing) throw notFound('Category not found');
   const c = parseCategory(body);
-  db.prepare('UPDATE categories SET name = ?, slug = ?, description = ?, image_url = ?, sort_order = ? WHERE id = ?').run(
+  await db.prepare('UPDATE categories SET name = ?, slug = ?, description = ?, image_url = ?, sort_order = ? WHERE id = ?').run(
     c.name, c.slug, c.description, imageUrl ?? existing.image_url, c.sort_order, id
   );
   return db.prepare('SELECT * FROM categories WHERE id = ?').get(id);
 }
 
-function deleteCategory(db, id) {
-  const { changes } = db.prepare('DELETE FROM categories WHERE id = ?').run(id);
+async function deleteCategory(db, id) {
+  const { changes } = await db.prepare('DELETE FROM categories WHERE id = ?').run(id);
   if (!changes) throw notFound('Category not found');
 }
 
@@ -67,10 +67,10 @@ function decorate(p) {
   return { ...p, in_stock: p.stock_qty > 0, is_featured: !!p.is_featured, is_active: !!p.is_active };
 }
 
-function listProducts(db, query = {}, { includeInactive = false } = {}) {
+async function listProducts(db, query = {}, { includeInactive = false } = {}) {
   const where = [];
   const params = [];
-  if (!includeInactive) where.push('p.is_active = 1');
+  if (!includeInactive) where.push('p.is_active = TRUE');
   if (query.q) {
     const like = `%${String(query.q).trim()}%`;
     where.push('(p.name LIKE ? OR p.description LIKE ? OR p.fabric LIKE ? OR p.color LIKE ? OR p.sku LIKE ? OR c.name LIKE ?)');
@@ -84,7 +84,7 @@ function listProducts(db, query = {}, { includeInactive = false } = {}) {
   if (min !== null) { where.push('p.price >= ?'); params.push(min); }
   if (max !== null) { where.push('p.price <= ?'); params.push(max); }
   if (bool(query.inStock)) where.push('p.stock_qty > 0');
-  if (bool(query.featured)) where.push('p.is_featured = 1');
+  if (bool(query.featured)) where.push('p.is_featured = TRUE');
 
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
   const from = `FROM products p LEFT JOIN categories c ON c.id = p.category_id ${whereSql}`;
@@ -92,26 +92,26 @@ function listProducts(db, query = {}, { includeInactive = false } = {}) {
   const page = num(query.page, 'page', { integer: true, min: 1 }) ?? 1;
   const order = SORTS[query.sort] || SORTS.featured;
 
-  const total = db.prepare(`SELECT COUNT(*) AS n ${from}`).get(...params).n;
-  const items = db
+  const total = (await db.prepare(`SELECT COUNT(*) AS n ${from}`).get(...params)).n;
+  const items = (await db
     .prepare(
       `SELECT p.*, c.name AS category_name, c.slug AS category_slug, ${FIRST_IMAGE}
        ${from} ORDER BY ${order} LIMIT ? OFFSET ?`
     )
-    .all(...params, limit, (page - 1) * limit)
+    .all(...params, limit, (page - 1) * limit))
     .map(decorate);
   return { items, total, page, pages: Math.max(1, Math.ceil(total / limit)) };
 }
 
-function filterOptions(db) {
-  const distinct = (col) =>
-    db.prepare(`SELECT DISTINCT ${col} AS v FROM products WHERE is_active = 1 AND ${col} <> '' ORDER BY ${col}`).all().map((r) => r.v);
-  const range = db.prepare('SELECT MIN(price) AS min, MAX(price) AS max FROM products WHERE is_active = 1').get();
-  return { fabrics: distinct('fabric'), colors: distinct('color'), price: { min: range.min ?? 0, max: range.max ?? 0 } };
+async function filterOptions(db) {
+  const distinct = async (col) =>
+    (await db.prepare(`SELECT DISTINCT ${col} AS v FROM products WHERE is_active = TRUE AND ${col} <> '' ORDER BY ${col}`).all()).map((row) => row.v);
+  const range = await db.prepare('SELECT MIN(price) AS min, MAX(price) AS max FROM products WHERE is_active = TRUE').get();
+  return { fabrics: await distinct('fabric'), colors: await distinct('color'), price: { min: range.min ?? 0, max: range.max ?? 0 } };
 }
 
-function getProduct(db, { id, slug }, { includeInactive = false } = {}) {
-  const p = db
+async function getProduct(db, { id, slug }, { includeInactive = false } = {}) {
+  const p = await db
     .prepare(
       `SELECT p.*, c.name AS category_name, c.slug AS category_slug
          FROM products p LEFT JOIN categories c ON c.id = p.category_id
@@ -119,7 +119,7 @@ function getProduct(db, { id, slug }, { includeInactive = false } = {}) {
     )
     .get(id !== undefined ? id : String(slug));
   if (!p || (!includeInactive && !p.is_active)) throw notFound('Saree not found');
-  const images = db.prepare('SELECT id, url, alt FROM product_images WHERE product_id = ? ORDER BY sort_order, id').all(p.id);
+  const images = await db.prepare('SELECT id, url, alt FROM product_images WHERE product_id = ? ORDER BY sort_order, id').all(p.id);
   return decorate({ ...p, images, image_url: images[0]?.url || null });
 }
 
@@ -139,62 +139,62 @@ function parseProduct(body) {
     mrp,
     description: str(body.description, 'Description', { max: 5000 }),
     stock_qty: num(body.stock_qty, 'Stock', { integer: true }) ?? 0,
-    is_featured: bool(body.is_featured),
-    is_active: body.is_active === undefined ? 1 : bool(body.is_active),
+    is_featured: Boolean(bool(body.is_featured)),
+    is_active: body.is_active === undefined ? true : Boolean(bool(body.is_active)),
   };
 }
 
-function addImages(db, productId, urls, alt) {
-  const start = db.prepare('SELECT COALESCE(MAX(sort_order), -1) + 1 AS n FROM product_images WHERE product_id = ?').get(productId).n;
+async function addImages(db, productId, urls, alt) {
+  const start = (await db.prepare('SELECT COALESCE(MAX(sort_order), -1) + 1 AS n FROM product_images WHERE product_id = ?').get(productId)).n;
   const insert = db.prepare('INSERT INTO product_images (product_id, url, alt, sort_order) VALUES (?, ?, ?, ?)');
-  urls.forEach((url, i) => insert.run(productId, url, alt, start + i));
+  for (const [index, url] of urls.entries()) await insert.run(productId, url, alt, start + index);
 }
 
 const PRODUCT_COLUMNS = ['sku', 'name', 'slug', 'category_id', 'fabric', 'color', 'price', 'mrp', 'description', 'stock_qty', 'is_featured', 'is_active'];
 
-function createProduct(db, body, imageUrls = []) {
+async function createProduct(db, body, imageUrls = []) {
   const p = parseProduct(body);
-  const { lastInsertRowid } = db
-    .prepare(`INSERT INTO products (${PRODUCT_COLUMNS.join(', ')}) VALUES (${PRODUCT_COLUMNS.map(() => '?').join(', ')})`)
+  const { lastInsertRowid } = await db
+    .prepare(`INSERT INTO products (${PRODUCT_COLUMNS.join(', ')}) VALUES (${PRODUCT_COLUMNS.map(() => '?').join(', ')}) RETURNING id`)
     .run(...PRODUCT_COLUMNS.map((k) => p[k]));
-  addImages(db, lastInsertRowid, imageUrls, p.name);
+  await addImages(db, lastInsertRowid, imageUrls, p.name);
   return getProduct(db, { id: Number(lastInsertRowid) }, { includeInactive: true });
 }
 
-function logStockChange(db, product, newQty, { note = '', changedBy = 'system' } = {}) {
+async function logStockChange(db, product, newQty, { note = '', changedBy = 'system' } = {}) {
   if (product.stock_qty === newQty && !note) return;
-  db.prepare(
+  await db.prepare(
     'INSERT INTO stock_log (product_id, sku, product_name, old_qty, new_qty, note, changed_by) VALUES (?, ?, ?, ?, ?, ?, ?)'
   ).run(product.id, product.sku, product.name, product.stock_qty, newQty, note, changedBy);
 }
 
-function updateProduct(db, id, body, imageUrls = [], { changedBy } = {}) {
-  const before = getProduct(db, { id }, { includeInactive: true });
+async function updateProduct(db, id, body, imageUrls = [], { changedBy } = {}) {
+  const before = await getProduct(db, { id }, { includeInactive: true });
   const p = parseProduct(body);
-  transaction(db, () => {
-    db.prepare(`UPDATE products SET ${PRODUCT_COLUMNS.map((k) => `${k} = ?`).join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(
+  await transaction(db, async () => {
+    await db.prepare(`UPDATE products SET ${PRODUCT_COLUMNS.map((k) => `${k} = ?`).join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`).run(
       ...PRODUCT_COLUMNS.map((k) => p[k]), id
     );
-    if (before.stock_qty !== p.stock_qty) logStockChange(db, before, p.stock_qty, { changedBy, note: 'Edited in product form' });
-    addImages(db, id, imageUrls, p.name);
+    if (before.stock_qty !== p.stock_qty) await logStockChange(db, before, p.stock_qty, { changedBy, note: 'Edited in product form' });
+    await addImages(db, id, imageUrls, p.name);
   });
   return getProduct(db, { id }, { includeInactive: true });
 }
 
-function updateStock(db, id, stockQty, { note = '', changedBy } = {}) {
+async function updateStock(db, id, stockQty, { note = '', changedBy } = {}) {
   const qty = num(stockQty, 'Stock', { required: true, integer: true });
   const cleanNote = str(note, 'Note', { max: 200 });
-  transaction(db, () => {
-    const before = db.prepare('SELECT id, sku, name, stock_qty FROM products WHERE id = ?').get(id);
+  await transaction(db, async () => {
+    const before = await db.prepare('SELECT id, sku, name, stock_qty FROM products WHERE id = ? FOR UPDATE').get(id);
     if (!before) throw notFound('Saree not found');
-    db.prepare('UPDATE products SET stock_qty = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(qty, id);
-    logStockChange(db, before, qty, { note: cleanNote, changedBy });
+    await db.prepare('UPDATE products SET stock_qty = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(qty, id);
+    await logStockChange(db, before, qty, { note: cleanNote, changedBy });
   });
   return getProduct(db, { id }, { includeInactive: true });
 }
 
 // Lightweight stock view for staff: no pricing or descriptions.
-function listStock(db, query = {}) {
+async function listStock(db, query = {}) {
   const where = [];
   const params = [];
   if (query.q) {
@@ -205,14 +205,14 @@ function listStock(db, query = {}) {
   const low = num(query.lowStock, 'lowStock', { integer: true });
   if (low !== null) { where.push('p.stock_qty <= ?'); params.push(low); }
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
-  return db
+  return (await db
     .prepare(
       `SELECT p.id, p.sku, p.name, p.fabric, p.color, p.stock_qty, p.is_active, p.updated_at,
               c.name AS category_name, ${FIRST_IMAGE}
        FROM products p LEFT JOIN categories c ON c.id = p.category_id ${whereSql}
        ORDER BY p.stock_qty ASC, p.name ASC`
     )
-    .all(...params)
+    .all(...params))
     .map((p) => ({ ...p, is_active: Boolean(p.is_active) }));
 }
 
@@ -226,17 +226,17 @@ function stockHistory(db, { productId, limit } = {}) {
     .all(...(pid ? [pid] : []), max);
 }
 
-function deleteProduct(db, id) {
-  const urls = db.prepare('SELECT url FROM product_images WHERE product_id = ?').all(id).map((r) => r.url);
-  const { changes } = db.prepare('DELETE FROM products WHERE id = ?').run(id);
+async function deleteProduct(db, id) {
+  const urls = (await db.prepare('SELECT url FROM product_images WHERE product_id = ?').all(id)).map((row) => row.url);
+  const { changes } = await db.prepare('DELETE FROM products WHERE id = ?').run(id);
   if (!changes) throw notFound('Saree not found');
   return urls;
 }
 
-function deleteImage(db, imageId) {
-  const img = db.prepare('SELECT url FROM product_images WHERE id = ?').get(imageId);
+async function deleteImage(db, imageId) {
+  const img = await db.prepare('SELECT url FROM product_images WHERE id = ?').get(imageId);
   if (!img) throw notFound('Image not found');
-  db.prepare('DELETE FROM product_images WHERE id = ?').run(imageId);
+  await db.prepare('DELETE FROM product_images WHERE id = ?').run(imageId);
   return img.url;
 }
 

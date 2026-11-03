@@ -34,7 +34,7 @@ Anyone with access to this repository can run, view, and edit the site in the br
 
 ## 2. Run locally
 
-Requires **Node.js 22.13+** (uses the built-in `node:sqlite`, so no database server or native build is needed).
+Requires **Node.js 22.13+** and a PostgreSQL database (for example, Neon). Set `DATABASE_URL` in `.env` before starting. Tables are created automatically; no sample catalogue is inserted.
 
 ```bash
 cd Abhinayam
@@ -54,7 +54,7 @@ To let others on the same Wi-Fi or LAN open it, share `http://<your-ip>:3000`.
 | `PORT` | `3000` | HTTP port |
 | `NODE_ENV` | `development` | Use `production` for live (secure cookies, HSTS, required secrets) |
 | `PUBLIC_BASE_URL` | `http://localhost:3000` | Public site URL used in the sitemap, canonical, and Open Graph links |
-| `DB_FILE` | `data/abhinayam.db` | SQLite database file |
+| `DATABASE_URL` | required | PostgreSQL connection string; use `sslmode=verify-full` for hosted databases requiring verified TLS |
 | `UPLOAD_DIR` | `uploads` | Where product photos are stored |
 | `SESSION_SECRET` | random (dev only) | **Required in production.** Long random string |
 | `ADMIN_USERNAME` / `ADMIN_PASSWORD` | `admin` / `ChangeMe@123` (dev) | First admin, created automatically only if no admin exists |
@@ -72,7 +72,22 @@ cp .env.example .env   # set NODE_ENV=production, SESSION_SECRET, ADMIN_PASSWORD
 docker compose up -d --build
 ```
 
-The database and photos are kept in Docker volumes (`abhinayam-data`, `abhinayam-uploads`). Back them up regularly. The container works on any VM, Google Cloud Run (add a persistent volume), Render, Railway, and similar hosts. Serve it over HTTPS.
+Product photos are kept in the `abhinayam-uploads` Docker volume; database records are stored in the PostgreSQL instance named by `DATABASE_URL`. Back up both regularly. The container works on any VM, Google Cloud Run (add persistent storage for uploads), Render, Railway, and similar hosts. Serve it over HTTPS.
+
+### PostgreSQL startup errors
+
+An error near `OR` usually means an older image is running SQLite SQL such as `INSERT OR IGNORE`. After updating the code, rebuild from this directory:
+
+```bash
+docker compose up -d --build --force-recreate web
+docker compose logs -f web
+```
+
+Do not delete Docker volumes to fix SQL errors. Startup now awaits schema, settings, and admin initialization before listening.
+
+The `pg` SSL warning is separate from SQL failures. In your private `.env`, change `sslmode=require` (or `prefer`/`verify-ca`) to `sslmode=verify-full` to explicitly preserve full certificate and hostname verification. Do not disable certificate checks to silence the warning.
+
+Run the PostgreSQL regression checks with `npm run test:postgres`. Set `TEST_DATABASE_URL` to a disposable PostgreSQL database to also run integration checks; they create and remove an isolated schema and require schema-creation permission. Without it, integration checks are skipped. The older `npm test` suite still assumes SQLite and requires migration.
 
 **Google search:** after going live, add the domain in [Google Search Console](https://search.google.com/search-console), submit `https://your-domain/sitemap.xml`, and create a Google Business Profile that links to the site.
 
@@ -107,13 +122,12 @@ Cancelling an order returns its stock automatically.
 
 ```
 Abhinayam/
-├── db/schema.sql          # Database schema (tables: categories, products, product_images, orders, order_items, admins, stock_log, settings)
-├── db/seed.sql            # Sample sarees and categories (only loaded into an empty DB)
+├── db/schema-postgres.sql # PostgreSQL schema (categories, products, product_images, orders, order_items, admins, stock_log, settings)
 ├── src/
 │   ├── server.js          # Entry point
 │   ├── app.js             # Express app: security headers, sessions, routes, errors
 │   ├── config.js          # Env-based configuration (12-factor)
-│   ├── db.js              # SQLite connection + transactions
+│   ├── db.js              # PostgreSQL pool, schema initialization + transactions
 │   ├── auth.js            # scrypt password hashing, admin session guard
 │   ├── uploads.js         # Image upload (JPG/PNG/WEBP, 5 MB, max 8)
 │   ├── seo.js             # sitemap.xml, robots.txt, server-rendered product SEO

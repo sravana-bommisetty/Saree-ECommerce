@@ -1,51 +1,125 @@
 'use strict';
-const fs = require('node:fs');
+const { Pool, types } = require('pg');
+const { AsyncLocalStorage } = require('node:async_hooks');
+const fs = require('node:fs/promises');
 const path = require('node:path');
-const { DatabaseSync } = require('node:sqlite');
 
-const DB_DIR = path.resolve(__dirname, '..', 'db');
+const transactions = new AsyncLocalStorage();
 
-function openDb(file, { seed = true } = {}) {
-  if (file !== ':memory:') fs.mkdirSync(path.dirname(file), { recursive: true });
-  const db = new DatabaseSync(file);
-  db.exec('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL;');
-  db.exec(fs.readFileSync(path.join(DB_DIR, 'schema.sql'), 'utf8'));
-  migrate(db);
-  if (seed && db.prepare('SELECT COUNT(*) AS n FROM categories').get().n === 0) {
-    db.exec(fs.readFileSync(path.join(DB_DIR, 'seed.sql'), 'utf8'));
+function placeholders(sql) {
+  let index = 0;
+  return sql.replace(/'(?:''|[^'])*'|"(?:""|[^"])*"|\$([A-Za-z_][A-Za-z_0-9]*)?\$[\s\S]*?\$\1\$|--[^\n]*|\/\*[\s\S]*?\*\/|\?/g,
+    (token) => token === '?' ? `$${++index}` : token);
+}
+
+/**
+ * Open PostgreSQL database connection
+ * ALWAYS uses PostgreSQL (both development and production)
+ * @param {string} databaseUrl - PostgreSQL connection string (required)
+ * @returns {Object} Database instance with prepare(), exec(), close()
+ */
+function openDb(databaseUrl) {
+  if (!databaseUrl) {
+    throw new Error(
+      'DATABASE_URL environment variable is required.\n' +
+      'Set your Neon PostgreSQL connection string:\n' +
+      'DATABASE_URL=postgresql://...'
+    );
   }
+
+  const db = {
+    __isPostgres: true,
+    __client: null,
+    __initialized: false,
+    
+    async __init() {
+      if (this.__initialized) return;
+      this.__client = new Pool({
+        connectionString: databaseUrl,
+        types: {
+          getTypeParser(oid, format) {
+            if (oid === 20 || oid === 1700) return Number;
+            if (oid === 1114 || oid === 1184) return (value) => value;
+            return types.getTypeParser(oid, format);
+          },
+        },
+      });
+      try {
+        const schema = await fs.readFile(path.join(__dirname, '../db/schema-postgres.sql'), 'utf8');
+        await this.__client.query(schema);
+        this.__initialized = true;
+      } catch (error) {
+        await this.__client.end();
+        this.__client = null;
+        throw error;
+      }
+      console.log('✅ Connected to PostgreSQL');
+    },
+
+    async query(sql, params) {
+      if (!this.__initialized) throw new Error('Database not initialized. Call await db.__init() first');
+      const current = transactions.getStore();
+      const client = current?.db === this ? current.client : this.__client;
+      return client.query(sql, params);
+    },
+
+    prepare(sql) {
+      const self = this;
+      const text = placeholders(sql);
+      
+      return {
+        async get(...params) {
+          const res = await self.query(text, params);
+          return res.rows[0] || null;
+        },
+        
+        async all(...params) {
+          const res = await self.query(text, params);
+          return res.rows;
+        },
+        
+        async run(...params) {
+          const res = await self.query(text, params);
+          return {
+            changes: res.rowCount,
+            lastInsertRowid: res.rows[0]?.id
+          };
+        }
+      };
+    },
+
+    async exec(sql) {
+      await this.query(sql);
+    },
+
+    close() {
+      if (this.__client && this.__initialized) {
+        return this.__client.end();
+      }
+      return Promise.resolve();
+    }
+  };
+  
   return db;
 }
 
-// Columns added after the first release; CREATE TABLE IF NOT EXISTS does not add them to existing databases.
-const ADDED_COLUMNS = {
-  admins: {
-    role: "TEXT NOT NULL DEFAULT 'admin' CHECK (role IN ('admin','staff'))",
-    display_name: "TEXT NOT NULL DEFAULT ''",
-    is_active: 'INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0,1))',
-    last_login_at: 'TEXT',
-  },
-};
-
-function migrate(db) {
-  for (const [table, columns] of Object.entries(ADDED_COLUMNS)) {
-    const existing = new Set(db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name));
-    for (const [name, def] of Object.entries(columns)) {
-      if (!existing.has(name)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${def}`);
-    }
-  }
-}
-
-function transaction(db, fn) {
-  db.exec('BEGIN');
+/**
+ * Transaction support for PostgreSQL
+ */
+async function transaction(db, fn) {
+  const client = await db.__client.connect();
   try {
-    const result = fn();
-    db.exec('COMMIT');
+    await client.query('BEGIN');
+    const result = await transactions.run({ db, client }, fn);
+    await client.query('COMMIT');
     return result;
-  } catch (err) {
-    db.exec('ROLLBACK');
-    throw err;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
   }
 }
 
-module.exports = { openDb, transaction, migrate };
+module.exports = { openDb, transaction };
+

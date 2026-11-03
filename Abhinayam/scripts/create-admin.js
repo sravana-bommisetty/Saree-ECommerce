@@ -9,13 +9,18 @@ if (!username || !password) {
   console.error('Usage: npm run create-admin -- <username> <password> [admin|staff]');
   process.exit(1);
 }
-const db = openDb(loadConfig().dbFile);
-try {
-  createUser(db, { username, password, role });
-  console.log(`${role === 'staff' ? 'Staff user' : 'Admin'} "${username}" created.`);
-} catch (err) {
+async function main() {
+  const db = openDb(loadConfig().databaseUrl);
+  try {
+    await db.__init();
+    await createUser(db, { username, password, role });
+    console.log(`${role === 'staff' ? 'Staff user' : 'Admin'} "${username}" created.`);
+  } finally {
+    await db.close();
+  }
+}
+
+main().catch((err) => {
   console.error(`Failed: ${err.message}`);
   process.exitCode = 1;
-} finally {
-  db.close();
-}
+});

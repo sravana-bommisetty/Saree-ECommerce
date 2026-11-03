@@ -16,11 +16,11 @@ function robotsTxt(baseUrl) {
   return `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /staff\nDisallow: /api/\n\nSitemap: ${baseUrl}/sitemap.xml\n`;
 }
 
-function sitemapXml(db, baseUrl) {
+async function sitemapXml(db, baseUrl) {
   const urls = [
     ...STATIC_PAGES.map((p) => ({ loc: baseUrl + p })),
-    ...catalog.listCategories(db, { includeEmpty: false }).map((c) => ({ loc: `${baseUrl}/shop?category=${encodeURIComponent(c.slug)}` })),
-    ...catalog.listProducts(db, { limit: 100, sort: 'newest' }).items.map((p) => ({
+    ...(await catalog.listCategories(db, { includeEmpty: false })).map((c) => ({ loc: `${baseUrl}/shop?category=${encodeURIComponent(c.slug)}` })),
+    ...(await catalog.listProducts(db, { limit: 100, sort: 'newest' })).items.map((p) => ({
       loc: `${baseUrl}/saree/${encodeURIComponent(p.slug)}`,
       lastmod: String(p.updated_at).slice(0, 10),
     })),
@@ -31,9 +31,9 @@ function sitemapXml(db, baseUrl) {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`;
 }
 
-function productPage(db, config, slug) {
-  const p = catalog.getProduct(db, { slug });
-  const s = getSettings(db);
+async function productPage(db, config, slug) {
+  const p = await catalog.getProduct(db, { slug });
+  const s = await getSettings(db);
   const url = `${config.baseUrl}/saree/${encodeURIComponent(p.slug)}`;
   const image = p.image_url ? config.baseUrl + p.image_url : `${config.baseUrl}/images/logo.svg`;
   const desc = `${p.name} – ${p.fabric} saree in ${p.color}. ${p.description}`.slice(0, 300);

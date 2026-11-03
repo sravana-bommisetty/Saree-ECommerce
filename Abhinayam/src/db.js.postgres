@@ -1,0 +1,129 @@
+'use strict';
+const pg = require('pg');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const DB_DIR = path.resolve(__dirname, '..', 'db');
+
+function openDb(databaseUrl) {
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL environment variable not set. Required for PostgreSQL connection.');
+  }
+
+  const pool = new pg.Pool({ connectionString: databaseUrl });
+
+  // Create a client wrapper with synchronous-like methods
+  const client = {
+    pool,
+    prepare: (query) => {
+      return {
+        run: (...params) => {
+          // For INSERT/UPDATE/DELETE, execute and return changes
+          return pool.query(query, params);
+        },
+        get: (...params) => {
+          // For SELECT queries returning single row
+          return pool.query(query, params).then(res => res.rows[0]);
+        },
+        all: (...params) => {
+          // For SELECT queries returning multiple rows
+          return pool.query(query, params).then(res => res.rows);
+        },
+      };
+    },
+    exec: (sql) => {
+      // For executing raw SQL (schema creation, etc.)
+      return pool.query(sql);
+    },
+    close: async () => {
+      await pool.end();
+    },
+  };
+
+  return client;
+}
+
+// For backward compatibility with synchronous SQLite API, we need to wrap async operations
+// This version converts the pool client to a synchronous-looking API using sync primitives
+function openDbSync(databaseUrl) {
+  if (!databaseUrl) {
+    throw new Error('DATABASE_URL environment variable not set. Required for PostgreSQL connection.');
+  }
+
+  // We need to create a synchronous wrapper
+  // This is tricky because pg is async-only, but we'll return an object
+  // that mimics the DatabaseSync interface
+  
+  const Client = pg.Client;
+  let pgClient;
+  
+  // Initialize connection synchronously is not possible with pg
+  // We'll return an async-compatible wrapper
+  const wrapper = {
+    ready: false,
+    client: null,
+    async _connect() {
+      if (!this.ready) {
+        this.client = new Client({ connectionString: databaseUrl });
+        await this.client.connect();
+        this.ready = true;
+      }
+      return this.client;
+    },
+    prepare: (sql) => {
+      const self = wrapper;
+      return {
+        async get(...params) {
+          const client = await self._connect();
+          const result = await client.query(sql, params);
+          return result.rows[0] || null;
+        },
+        async all(...params) {
+          const client = await self._connect();
+          const result = await client.query(sql, params);
+          return result.rows;
+        },
+        async run(...params) {
+          const client = await self._connect();
+          const result = await client.query(sql, params);
+          return { changes: result.rowCount };
+        },
+      };
+    },
+    async exec(sql) {
+      const client = await this._connect();
+      const statements = sql.split(';').filter(s => s.trim());
+      for (const statement of statements) {
+        if (statement.trim()) {
+          await client.query(statement);
+        }
+      }
+    },
+    async close() {
+      if (this.client && this.ready) {
+        await this.client.end();
+        this.ready = false;
+      }
+    },
+  };
+  
+  return wrapper;
+}
+
+function transaction(db, fn) {
+  // For PostgreSQL with async operations
+  return db.client.query('BEGIN')
+    .then(() => {
+      return Promise.resolve(fn());
+    })
+    .then(result => {
+      return db.client.query('COMMIT').then(() => result);
+    })
+    .catch(err => {
+      return db.client.query('ROLLBACK').then(() => {
+        throw err;
+      });
+    });
+}
+
+module.exports = { openDb, openDbSync, transaction };
