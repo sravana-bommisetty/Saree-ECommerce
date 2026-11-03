@@ -1,15 +1,60 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 96" role="img" aria-label="Abhinayam Silks">
-  <!-- Placeholder brand logo: replace public/images/logo.svg with your official logo file -->
+<svg xmlns="http://www.w3.org/2000/svg" width="632" height="530" viewBox="64 104 632 530" role="img" aria-labelledby="logo-title">
+  <title id="logo-title">Abhinayam Silks - Timeless Sarees, Eternal Grace</title>
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#e8d3a0"/>
-      <stop offset="1" stop-color="#c9a14a"/>
+    <linearGradient id="sari" x1=".2" y1="0" x2=".8" y2="1">
+      <stop offset="0" stop-color="#7c0719"/>
+      <stop offset=".58" stop-color="#4d0610"/>
+      <stop offset="1" stop-color="#8d1725"/>
     </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f4d88b"/>
+      <stop offset=".5" stop-color="#b77a2d"/>
+      <stop offset="1" stop-color="#f2d48a"/>
+    </linearGradient>
+    <pattern id="brocade" width="22" height="22" patternUnits="userSpaceOnUse">
+      <path d="M11 2 C13 6 17 8 20 11 C16 13 13 17 11 20 C9 16 6 13 2 11 C6 9 9 6 11 2Z" fill="none" stroke="#f1d18a" stroke-width="1.2"/>
+      <circle cx="11" cy="11" r="2" fill="#f1d18a"/>
+      <circle cx="2" cy="2" r="1" fill="#f1d18a"/>
+      <circle cx="20" cy="20" r="1" fill="#f1d18a"/>
+    </pattern>
+    <clipPath id="border">
+      <path d="M414 177 C419 233 428 286 449 333 C457 350 469 365 483 372 L554 356 C520 338 499 311 483 279 C464 240 449 200 444 162Z"/>
+    </clipPath>
   </defs>
-  <circle cx="48" cy="48" r="42" fill="#6e1423" stroke="url(#g)" stroke-width="4"/>
-  <circle cx="48" cy="48" r="34" fill="none" stroke="url(#g)" stroke-width="1.5" stroke-dasharray="3 4"/>
-  <path d="M48 20 L66 72 H58 L54 60 H42 L38 72 H30 Z M44.5 53 H51.5 L48 42 Z" fill="url(#g)"/>
-  <path d="M26 78 Q48 88 70 78" fill="none" stroke="url(#g)" stroke-width="2"/>
-  <text x="104" y="50" font-family="Playfair Display, Georgia, serif" font-size="34" font-weight="700" fill="#6e1423">Abhinayam</text>
-  <text x="106" y="76" font-family="Poppins, Arial, sans-serif" font-size="15" letter-spacing="9" fill="#c9a14a">SILKS</text>
+
+  <g aria-hidden="true">
+    <path d="M448 112 C423 114 408 134 405 158 C402 181 410 200 414 220 C418 246 419 281 431 314 C439 337 452 357 470 371 C500 371 528 363 560 355 C526 341 504 317 486 284 C465 246 451 204 444 166 C440 143 440 124 448 112Z" fill="url(#sari)"/>
+    <path d="M414 177 C419 233 428 286 449 333 C457 350 469 365 483 372 L554 356 C520 338 499 311 483 279 C464 240 449 200 444 162Z" fill="url(#brocade)" clip-path="url(#border)"/>
+    <path d="M414 177 C419 233 428 286 449 333 C457 350 469 365 483 372" fill="none" stroke="url(#gold)" stroke-width="3"/>
+    <path d="M425 178 C431 235 442 287 462 329 C469 344 478 355 488 365" fill="none" stroke="#f3d48a" stroke-width="1.5"/>
+    <path d="M444 162 C450 208 466 255 486 292 C502 322 523 344 550 355" fill="none" stroke="url(#gold)" stroke-width="2.5"/>
+
+    <path d="M408 186 C389 214 370 246 350 280 C329 316 299 342 265 341 C235 340 219 322 225 294 C230 269 255 254 286 254 C321 254 353 267 383 258 C398 254 411 245 422 232" fill="none" stroke="url(#sari)" stroke-width="8" stroke-linecap="round"/>
+    <path d="M225 294 C219 315 232 334 254 340" fill="none" stroke="url(#gold)" stroke-width="4" stroke-linecap="round"/>
+
+    <path d="M347 181 C353 157 374 138 397 136 C389 155 381 174 365 188 C355 196 344 202 333 207 C328 194 333 184 347 181Z" fill="url(#sari)"/>
+    <path d="M399 146 C412 136 426 133 438 135 C428 148 422 163 420 180 C419 191 421 202 425 211 C417 204 407 196 400 187 C393 176 392 159 399 146Z" fill="#fff0d6"/>
+    <path d="M406 169 Q414 166 420 170 M413 177 Q419 180 422 177 M421 182 Q417 189 413 190" fill="none" stroke="#5d1520" stroke-width="1.7" stroke-linecap="round"/>
+    <path d="M407 195 C395 215 389 233 381 249" fill="none" stroke="#6b1020" stroke-width="4" stroke-linecap="round"/>
+    <path d="M379 194 C383 187 390 187 394 194 L390 202 H381Z" fill="url(#gold)"/>
+    <circle cx="385" cy="194" r="2" fill="#731323"/>
+
+    <path d="M337 174 C332 167 335 159 341 158 C345 149 355 152 357 159 C365 161 366 169 360 173 C360 181 351 184 346 178 C340 181 334 179 337 174Z" fill="url(#gold)"/>
+    <g fill="#fff4d8">
+      <circle cx="341" cy="162" r="3"/><circle cx="350" cy="157" r="3"/><circle cx="359" cy="164" r="3"/>
+      <circle cx="358" cy="173" r="3"/><circle cx="348" cy="176" r="3"/><circle cx="340" cy="171" r="3"/>
+    </g>
+    <circle cx="349" cy="167" r="3" fill="#b8802e"/>
+  </g>
+
+  <text x="379" y="464" text-anchor="middle" textLength="625" lengthAdjust="spacingAndGlyphs" font-family="Baskerville, 'Times New Roman', Georgia, serif" font-size="91" fill="#650d19">ABHINAYAM</text>
+  <text x="379" y="533" text-anchor="middle" textLength="294" lengthAdjust="spacingAndGlyphs" font-family="Baskerville, 'Times New Roman', Georgia, serif" font-size="56" letter-spacing="25" fill="#b27a2e">SILKS</text>
+  <path d="M151 579 H339 M427 579 H617" stroke="#b27a2e" stroke-width="1.5"/>
+  <g fill="#790d21" aria-hidden="true">
+    <path d="M383 555 C374 566 373 577 383 585 C393 577 392 566 383 555Z"/>
+    <path d="M378 580 C367 571 362 571 357 574 C364 583 372 586 383 586Z" fill="#b27a2e"/>
+    <path d="M388 580 C399 571 404 571 409 574 C402 583 394 586 383 586Z" fill="#b27a2e"/>
+    <path d="M383 562 C376 571 377 579 383 584 C389 579 390 571 383 562Z" fill="#9d1830"/>
+  </g>
+  <text x="379" y="625" text-anchor="middle" textLength="438" lengthAdjust="spacingAndGlyphs" font-family="Baskerville, 'Times New Roman', Georgia, serif" font-size="15" letter-spacing="6" fill="#650d19">TIMELESS SAREES  &#8226;  ETERNAL GRACE</text>
 </svg>

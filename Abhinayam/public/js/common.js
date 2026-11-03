@@ -134,7 +134,7 @@
         <header class="site-header">
           <div class="container header-inner">
             <button class="icon-btn menu-toggle" id="menu-toggle" aria-label="Open menu">☰</button>
-            <a class="brand" href="/" aria-label="${escapeHtml(s.store_name)} home"><img src="/images/logo.svg" alt="${escapeHtml(s.store_name)} logo" width="174" height="52"></a>
+            <a class="brand" href="/" aria-label="${escapeHtml(s.store_name)} home"><img src="/images/favicon.svg" alt="${escapeHtml(s.store_name)} emblem" width="52" height="52"></a>
             <nav class="nav" id="nav">${NAV.map(([href, label]) => `<a href="${href}" class="${path === href ? 'active' : ''}">${label}</a>`).join('')}</nav>
             <div class="header-actions">
               <form class="header-search" action="/shop" role="search">

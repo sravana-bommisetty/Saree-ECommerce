@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 96" role="img" aria-label="Abhinayam Silks">
+  <!-- Placeholder brand logo: replace public/images/logo.svg with your official logo file -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e8d3a0"/>
+      <stop offset="1" stop-color="#c9a14a"/>
+    </linearGradient>
+  </defs>
+  <circle cx="48" cy="48" r="42" fill="#6e1423" stroke="url(#g)" stroke-width="4"/>
+  <circle cx="48" cy="48" r="34" fill="none" stroke="url(#g)" stroke-width="1.5" stroke-dasharray="3 4"/>
+  <path d="M48 20 L66 72 H58 L54 60 H42 L38 72 H30 Z M44.5 53 H51.5 L48 42 Z" fill="url(#g)"/>
+  <path d="M26 78 Q48 88 70 78" fill="none" stroke="url(#g)" stroke-width="2"/>
+  <text x="104" y="50" font-family="Playfair Display, Georgia, serif" font-size="34" font-weight="700" fill="#6e1423">Abhinayam</text>
+  <text x="106" y="76" font-family="Poppins, Arial, sans-serif" font-size="15" letter-spacing="9" fill="#c9a14a">SILKS</text>
+</svg>
