@@ -26,7 +26,7 @@ function loadConfig(env = process.env) {
   return {
     isProd,
     port: Number(env.PORT) || 3000,
-    baseUrl: (env.PUBLIC_BASE_URL || `http://localhost:${Number(env.PORT) || 3000}`).replace(/\/$/, ''),
+    baseUrl: (env.PUBLIC_BASE_URL || env.RENDER_EXTERNAL_URL || `http://localhost:${Number(env.PORT) || 3000}`).replace(/\/$/, ''),
     databaseUrl,  // ALWAYS use PostgreSQL
     uploadDir: path.resolve(ROOT, env.UPLOAD_DIR || 'uploads'),
     publicDir: path.join(ROOT, 'public'),

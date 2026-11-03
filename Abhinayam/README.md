@@ -57,7 +57,7 @@ To let others on the same Wi-Fi or LAN open it, share `http://<your-ip>:3000`.
 | `DATABASE_URL` | required | PostgreSQL connection string; use `sslmode=verify-full` for hosted databases requiring verified TLS |
 | `UPLOAD_DIR` | `uploads` | Where product photos are stored |
 | `SESSION_SECRET` | random (dev only) | **Required in production.** Long random string |
-| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | `admin` / `ChangeMe@123` (dev) | First admin, created automatically only if no admin exists |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | `admin` / empty | Optional first-admin bootstrap; requires an explicit password and no existing admin |
 | `WHATSAPP_NUMBER` | `919999999999` | Initial WhatsApp number with country code (editable in Admin → Settings) |
 | `UPI_ID` / `UPI_PAYEE_NAME` | `abhinayamsilks@upi` / `Abhinayam Silks` | Initial UPI details (editable in Admin) |
 | `INSTAGRAM_URL` | `https://www.instagram.com/abhinayamsilks` | Initial Instagram link (editable in Admin) |
@@ -65,6 +65,25 @@ To let others on the same Wi-Fi or LAN open it, share `http://<your-ip>:3000`.
 Add more admins with `npm run create-admin -- <username> <password>`, or staff with `npm run create-admin -- <username> <password> staff`. Usually it's easier to use **Admin → Staff access**.
 
 ## 4. Going live
+
+### Free Render preview with Neon
+
+The repository-root `render.yaml` deploys the existing Docker app on Render's **Free** web service plan and connects to your existing Neon database. It does not create a Render database or a paid disk. The app uses Render's assigned HTTPS URL automatically unless you set `PUBLIC_BASE_URL` for a custom domain.
+
+**Storage limitation:** this is a preview deployment until product images use durable external storage. Render Free loses uploaded files on restart, redeploy, or idle shutdown. Neon preserves product records and image URLs, but does not store the image files themselves. Local uploads are not transferred by this deployment. Use an external image service, such as Cloudinary, before using this setup for a live shop. That integration is not implemented yet.
+
+1. Rotate any database credentials previously shared in chat and change the default admin password through Admin > Account before making the site public.
+2. Push the latest code, including the root `render.yaml`, to your GitHub repository. Never commit private environment files. Render builds the pushed branch, not uncommitted local changes.
+3. Sign up at https://dashboard.render.com using GitHub. Choose the **Hobby** workspace and **New > Blueprint**, then select this repository and the branch containing your changes. The Blueprint path is `render.yaml` at the repository root.
+4. Confirm the web service compute plan is **Free**. Free services can run without a payment method, but Render can request account verification. If your account requires a card, stop rather than entering one or selecting a paid plan.
+5. At the `DATABASE_URL` prompt, paste the pooled connection string privately from Neon. Keep `sslmode=verify-full` and any other required connection parameters. Do not paste credentials into chat or commit them. The Blueprint generates a separate `SESSION_SECRET` automatically.
+6. Deploy, then open the HTTPS URL shown by Render. Check `/healthz`, the storefront, and `/admin/`. Log in with your existing Neon admin account; leave bootstrap credentials unset. The same Neon database is shared by your local and hosted apps, so edits affect both.
+
+Free services sleep after 15 minutes without inbound traffic and can take around a minute to wake up. Admin sessions are in memory, so a restart or idle shutdown logs users out. Free-tier usage limits can suspend the site or disable builds; this is not an always-on production hosting plan. A custom domain registration is separate; the assigned `onrender.com` address is sufficient for a free preview.
+
+Official references: [Render Free limitations](https://render.com/docs/free), [Blueprint fields](https://render.com/docs/blueprint-spec), and [Cloudinary's no-card Free plan](https://cloudinary.com/pricing).
+
+### Docker on a host with persistent uploads
 
 ```bash
 cd Abhinayam

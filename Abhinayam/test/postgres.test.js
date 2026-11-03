@@ -13,6 +13,22 @@ const { ensureSettings } = require('../src/services/settings');
 const catalog = require('../src/services/catalog');
 const orders = require('../src/services/orders');
 
+test('Render deployment uses its HTTPS URL unless a public URL is explicitly configured', () => {
+  const env = {
+    DATABASE_URL: 'postgresql://test:test@localhost/test',
+    NODE_ENV: 'production',
+    SESSION_SECRET: 'test-secret',
+    RENDER_EXTERNAL_URL: 'https://abhinayam-test.onrender.com/',
+    PORT: '10000',
+  };
+  assert.equal(loadConfig(env).baseUrl, 'https://abhinayam-test.onrender.com');
+  assert.equal(loadConfig(env).port, 10000);
+  assert.equal(loadConfig(env).isProd, true);
+  assert.equal(loadConfig(env).admin.password, '');
+  assert.equal(loadConfig({ ...env, PUBLIC_BASE_URL: 'https://silks.example/' }).baseUrl, 'https://silks.example');
+  assert.equal(loadConfig({ DATABASE_URL: env.DATABASE_URL }).baseUrl, 'http://localhost:3000');
+});
+
 test('admin bootstrap requires an explicitly configured password', async (context) => {
   const { ensureAdmin } = require('../src/auth');
   const env = { DATABASE_URL: 'postgresql://test:test@localhost/test' };
