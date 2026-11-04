@@ -19,6 +19,7 @@ function getS3Client(awsConfig) {
         secretAccessKey: awsConfig.secretAccessKey,
       },
       endpoint: awsConfig.endpoint,
+      forcePathStyle: true, // Use path-style URLs instead of virtual-hosted-style
     });
   }
   return s3Client;
