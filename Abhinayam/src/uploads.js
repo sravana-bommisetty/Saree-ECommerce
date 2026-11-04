@@ -10,15 +10,15 @@ const URL_PREFIX = '/uploads/';
 
 // S3 client initialization
 let s3Client = null;
-function getS3Client(config) {
-  if (!s3Client && config.aws) {
+function getS3Client(awsConfig) {
+  if (!s3Client && awsConfig) {
     s3Client = new S3Client({
-      region: config.aws.region,
+      region: awsConfig.region,
       credentials: {
-        accessKeyId: config.aws.accessKeyId,
-        secretAccessKey: config.aws.secretAccessKey,
+        accessKeyId: awsConfig.accessKeyId,
+        secretAccessKey: awsConfig.secretAccessKey,
       },
-      endpoint: config.aws.endpoint,
+      endpoint: awsConfig.endpoint,
     });
   }
   return s3Client;
@@ -26,9 +26,9 @@ function getS3Client(config) {
 
 function createUploader(config) {
   const useS3 = config.aws && config.aws.bucket;
-  const s3 = useS3 ? getS3Client(config) : null;
+  const s3 = useS3 ? getS3Client(config.aws) : null;
 
-  // Memory storage for S3 uploads (don't save locally)
+  // Memory storage for uploads
   const storage = multer.memoryStorage();
 
   const upload = multer({
@@ -59,8 +59,8 @@ function createUploader(config) {
             req.file.filename = fileName;
             req.file.s3Uploaded = true;
           } catch (uploadErr) {
-            console.error('[uploads] S3 upload error:', uploadErr);
-            return next(badRequest('Failed to upload image to storage'));
+            console.error('[uploads] S3 upload error:', uploadErr.message || uploadErr);
+            return next(badRequest('Failed to upload image to storage: ' + (uploadErr.message || String(uploadErr))));
           }
         }
         next();
@@ -89,8 +89,8 @@ function createUploader(config) {
             );
             req.files = uploadedFiles;
           } catch (uploadErr) {
-            console.error('[uploads] S3 upload error:', uploadErr);
-            return next(badRequest('Failed to upload images to storage'));
+            console.error('[uploads] S3 batch upload error:', uploadErr.message || uploadErr);
+            return next(badRequest('Failed to upload images to storage: ' + (uploadErr.message || String(uploadErr))));
           }
         }
         next();
@@ -107,7 +107,7 @@ function removeUpload(config, url) {
   if (typeof url !== 'string' || !url.startsWith(URL_PREFIX)) return;
   
   if (config.aws && config.aws.bucket) {
-    const s3 = getS3Client(config);
+    const s3 = getS3Client(config.aws);
     const fileName = url.substring(URL_PREFIX.length);
     
     const deleteCmd = new DeleteObjectCommand({
@@ -115,7 +115,9 @@ function removeUpload(config, url) {
       Key: fileName,
     });
     
-    s3.send(deleteCmd).catch((err) => {
+    s3.send(deleteCmd).then(() => {
+      console.log(`[uploads] Deleted ${fileName} from S3`);
+    }).catch((err) => {
       console.warn(`[uploads] Could not delete ${fileName} from S3: ${err.message}`);
     });
   }
