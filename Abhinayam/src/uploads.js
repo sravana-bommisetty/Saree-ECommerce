@@ -24,6 +24,39 @@ function getS3Client(awsConfig) {
   return s3Client;
 }
 
+// Format error message based on error code
+function formatS3Error(err) {
+  if (!err) return 'Unknown error';
+  
+  const message = err.message || String(err);
+  const code = err.Code || err.code || err.name || '';
+  
+  // Map common S3 errors to user-friendly messages
+  const errorMap = {
+    'NoCredentialsError': 'AWS credentials are missing or invalid',
+    'InvalidBucketName': 'Bucket name is invalid',
+    'NoSuchBucket': 'Storage bucket does not exist',
+    'AccessDenied': 'Access denied - check AWS credentials and permissions',
+    'Forbidden': 'Permission denied - insufficient bucket access',
+    'NetworkingError': 'Network error - check internet connection',
+    'ECONNREFUSED': 'Cannot connect to storage server - network issue',
+    'ENOTFOUND': 'Storage server not found - check endpoint URL',
+    'ETIMEDOUT': 'Connection timeout - check network or firewall',
+  };
+  
+  const friendlyMessage = errorMap[code];
+  if (friendlyMessage) {
+    return friendlyMessage;
+  }
+  
+  // If error code contains "Error", strip it for cleaner display
+  if (code && code.includes('Error')) {
+    return `${code.replace('Error', '')} - ${message}`;
+  }
+  
+  return message;
+}
+
 function createUploader(config) {
   const useS3 = config.aws && config.aws.bucket;
   const s3 = useS3 ? getS3Client(config.aws) : null;
@@ -45,6 +78,7 @@ function createUploader(config) {
         if (err) return next(err);
         if (req.file && s3) {
           try {
+            console.log(`[uploads] Uploading file: ${req.file.originalname} (${req.file.size} bytes)`);
             const fileName = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ALLOWED[req.file.mimetype]}`;
             const uploader = new Upload({
               client: s3,
@@ -58,9 +92,12 @@ function createUploader(config) {
             await uploader.done();
             req.file.filename = fileName;
             req.file.s3Uploaded = true;
+            console.log(`[uploads] ✅ Successfully uploaded: ${fileName}`);
           } catch (uploadErr) {
-            console.error('[uploads] S3 upload error:', uploadErr.message || uploadErr);
-            return next(badRequest('Failed to upload image to storage: ' + (uploadErr.message || String(uploadErr))));
+            const friendlyError = formatS3Error(uploadErr);
+            console.error(`[uploads] ❌ Upload failed for ${req.file.originalname}:`, uploadErr.message || uploadErr);
+            console.error(`[uploads] Error details - Code: ${uploadErr.Code || uploadErr.code || 'N/A'}, Message: ${uploadErr.message || 'N/A'}`);
+            return next(badRequest(`Image upload failed: ${friendlyError}`));
           }
         }
         next();
@@ -71,9 +108,11 @@ function createUploader(config) {
         if (err) return next(err);
         if (req.files && req.files.length > 0 && s3) {
           try {
+            console.log(`[uploads] Uploading ${req.files.length} files...`);
             const uploadedFiles = await Promise.all(
-              req.files.map(async (file) => {
+              req.files.map(async (file, index) => {
                 const fileName = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ALLOWED[file.mimetype]}`;
+                console.log(`[uploads] [${index + 1}/${req.files.length}] Uploading ${file.originalname}...`);
                 const uploader = new Upload({
                   client: s3,
                   params: {
@@ -84,13 +123,17 @@ function createUploader(config) {
                   },
                 });
                 await uploader.done();
+                console.log(`[uploads] [${index + 1}/${req.files.length}] ✅ ${file.originalname} uploaded`);
                 return { ...file, filename: fileName, s3Uploaded: true };
               })
             );
             req.files = uploadedFiles;
+            console.log(`[uploads] ✅ All ${req.files.length} files uploaded successfully`);
           } catch (uploadErr) {
-            console.error('[uploads] S3 batch upload error:', uploadErr.message || uploadErr);
-            return next(badRequest('Failed to upload images to storage: ' + (uploadErr.message || String(uploadErr))));
+            const friendlyError = formatS3Error(uploadErr);
+            console.error(`[uploads] ❌ Batch upload failed:`, uploadErr.message || uploadErr);
+            console.error(`[uploads] Error details - Code: ${uploadErr.Code || uploadErr.code || 'N/A'}, Message: ${uploadErr.message || 'N/A'}`);
+            return next(badRequest(`Photo upload failed: ${friendlyError}`));
           }
         }
         next();
@@ -115,10 +158,13 @@ function removeUpload(config, url) {
       Key: fileName,
     });
     
+    console.log(`[uploads] Deleting from S3: ${fileName}`);
     s3.send(deleteCmd).then(() => {
-      console.log(`[uploads] Deleted ${fileName} from S3`);
+      console.log(`[uploads] ✅ Deleted: ${fileName}`);
     }).catch((err) => {
-      console.warn(`[uploads] Could not delete ${fileName} from S3: ${err.message}`);
+      const friendlyError = formatS3Error(err);
+      console.warn(`[uploads] ⚠️ Could not delete ${fileName}: ${friendlyError}`);
+      console.warn(`[uploads] Error details - Code: ${err.Code || err.code || 'N/A'}`);
     });
   }
 }
