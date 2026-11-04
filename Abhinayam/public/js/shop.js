@@ -69,6 +69,7 @@
     if (b) { pushState(Number(b.dataset.page)); window.scrollTo({ top: 0, behavior: 'smooth' }); }
   });
   $('#filters-toggle').addEventListener('click', () => $('#filters').classList.toggle('open'));
+  $('#filters').querySelector('.filters-close')?.addEventListener('click', () => $('#filters').classList.remove('open'));
   window.addEventListener('popstate', load);
 
   load();

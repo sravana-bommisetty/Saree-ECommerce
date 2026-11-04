@@ -21,7 +21,10 @@
   <main class="section container">
     <div class="shop">
       <aside class="filters" id="filters" aria-label="Filters">
-        <h3>Filter</h3>
+        <div class="filters-header">
+          <h3>Filter</h3>
+          <button class="filters-close" aria-label="Close filters" type="button">✕</button>
+        </div>
         <form id="filter-form">
           <div class="field"><label for="f-q">Search</label><input id="f-q" name="q" type="search" placeholder="Name, colour, fabric…"></div>
           <div class="field"><label for="f-category">Category</label><select id="f-category" name="category"><option value="">All categories</option></select></div>

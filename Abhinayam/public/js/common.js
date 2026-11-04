@@ -92,7 +92,11 @@
           <div class="card-meta">${escapeHtml(p.fabric)}${p.color ? ' · ' + escapeHtml(p.color) : ''}</div>
           <div class="price">${mrp ? mrp + ' ' : ''}${inr(p.price)}</div>
           <div class="card-actions">
-            ${p.in_stock ? `<input type="number" class="qty-input" data-product="${p.id}" min="1" max="${p.stock_qty}" value="1" title="Quantity (max ${p.stock_qty})">` : ''}
+            ${p.in_stock ? `<div class="qty-ctrl" data-product="${p.id}">
+              <button type="button" class="qty-btn qty-dec" aria-label="Decrease">−</button>
+              <span class="qty-val">1</span>
+              <button type="button" class="qty-btn qty-inc" aria-label="Increase">+</button>
+            </div>` : ''}
             <button class="btn" data-add="${p.id}" ${p.in_stock ? '' : 'disabled'}>Add to bag</button>
             <a class="btn btn-wa" data-enquire="${p.id}" href="#" aria-label="Enquire on WhatsApp">Enquire</a>
           </div>
@@ -111,16 +115,41 @@
   function registerProducts(products) {
     products.forEach((p) => productRegistry.set(String(p.id), p));
   }
+  // Store quantities for each product
+  const productQtys = new Map();
+  
   document.addEventListener('click', async (e) => {
     const add = e.target.closest('[data-add]');
     const enq = e.target.closest('[data-enquire]');
+    const decBtn = e.target.closest('.qty-dec');
+    const incBtn = e.target.closest('.qty-inc');
+    
+    // Handle +/- buttons
+    if (decBtn || incBtn) {
+      const qtyCtrl = (decBtn || incBtn).closest('.qty-ctrl');
+      const productId = qtyCtrl?.dataset.product;
+      if (!productId) return;
+      
+      const p = productRegistry.get(productId);
+      if (!p) return;
+      
+      let currentQty = productQtys.get(productId) || 1;
+      if (decBtn && currentQty > 1) currentQty--;
+      if (incBtn && currentQty < p.stock_qty) currentQty++;
+      
+      productQtys.set(productId, currentQty);
+      qtyCtrl.querySelector('.qty-val').textContent = currentQty;
+      e.preventDefault();
+      return;
+    }
+    
     const p = productRegistry.get((add || enq)?.dataset[add ? 'add' : 'enquire']);
     if (!p) return;
     e.preventDefault();
+    
     if (add) {
-      // Get quantity from associated input or default to 1
-      const qtyInput = add.parentElement?.querySelector(`.qty-input[data-product="${p.id}"]`);
-      const qty = qtyInput ? Math.min(parseInt(qtyInput.value) || 1, p.stock_qty) : 1;
+      const productId = String(p.id);
+      const qty = productQtys.get(productId) || 1;
       
       if (qty < 1) {
         toast('Please select at least 1 item');
@@ -136,7 +165,7 @@
         cart.add(p);
       }
       toast(`Added ${qty} item${qty > 1 ? 's' : ''} to your bag`);
-      if (qtyInput) qtyInput.value = '1';
+      productQtys.delete(productId);
     } else {
       const s = await getSettings();
       window.open(waLink(s.whatsapp_number, enquiryText(p)), '_blank', 'noopener');
