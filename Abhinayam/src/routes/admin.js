@@ -19,7 +19,7 @@ function requireFetchHeader(req, res, next) {
 
 function adminRoutes(db, config) {
   const r = express.Router();
-  const upload = createUploader(config.uploadDir);
+  const upload = createUploader(config);
 
   // Cleans up uploaded files if the DB operation fails.
   const withUploads = (handler) => async (req, res) => {
@@ -27,7 +27,7 @@ function adminRoutes(db, config) {
     try {
       res.json(await handler(req, urls));
     } catch (err) {
-      urls.forEach((u) => removeUpload(config.uploadDir, u));
+      urls.forEach((u) => removeUpload(config, u));
       throw err;
     }
   };
@@ -100,11 +100,11 @@ function adminRoutes(db, config) {
   r.post('/products', upload.array('images', 8), withUploads((req, urls) => catalog.createProduct(db, req.body, urls)));
   r.put('/products/:id', upload.array('images', 8), withUploads((req, urls) => catalog.updateProduct(db, idParam(req), req.body, urls, byUser(req))));
   r.delete('/products/:id', async (req, res) => {
-    (await catalog.deleteProduct(db, idParam(req))).forEach((url) => removeUpload(config.uploadDir, url));
+    (await catalog.deleteProduct(db, idParam(req))).forEach((url) => removeUpload(config, url));
     res.json({ ok: true });
   });
   r.delete('/images/:id', async (req, res) => {
-    removeUpload(config.uploadDir, await catalog.deleteImage(db, idParam(req)));
+    removeUpload(config, await catalog.deleteImage(db, idParam(req)));
     res.json({ ok: true });
   });
 

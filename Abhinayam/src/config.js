@@ -31,6 +31,13 @@ function loadConfig(env = process.env) {
     uploadDir: path.resolve(ROOT, env.UPLOAD_DIR || 'uploads'),
     publicDir: path.join(ROOT, 'public'),
     sessionSecret,
+    aws: env.AWS_BUCKET_NAME ? {
+      bucket: env.AWS_BUCKET_NAME,
+      region: env.AWS_REGION || 'us-east-2',
+      endpoint: env.AWS_ENDPOINT_URL_S3,
+      accessKeyId: env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+    } : null,
     admin: {
       username: env.ADMIN_USERNAME || 'admin',
       password: env.ADMIN_PASSWORD || '',
