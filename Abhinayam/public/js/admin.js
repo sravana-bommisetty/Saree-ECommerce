@@ -8,18 +8,17 @@
   const fmtDate = (s) => new Date(String(s).replace(' ', 'T') + 'Z').toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
   const pill = (v) => `<span class="pill ${esc(v)}">${esc(v)}</span>`;
 
-  // Calculate MRP based on rate price and combined discounts
-  // MRP = Rate Price / (1 - (categoryDiscount + productDiscount) / 100)
-  // This calculates the ORIGINAL price before discounts
-  function calculateMrp(ratePrice, categoryDiscount = 0, productDiscount = 0) {
-    const p = Number(ratePrice) || 0;
+  // Calculate Sale Price (Rate Price) based on MRP and combined discounts
+  // Sale Price = MRP × (1 - (categoryDiscount + productDiscount) / 100)
+  // User provides MRP and discounts, system calculates what customer pays
+  function calculateSalePrice(mrp, categoryDiscount = 0, productDiscount = 0) {
+    const m = Number(mrp) || 0;
     const cd = Number(categoryDiscount) || 0;
     const pd = Number(productDiscount) || 0;
     const totalDiscount = cd + pd;
-    if (totalDiscount <= 0) return null;
-    if (totalDiscount >= 100) return null;
-    const mrp = Math.round(p / (1 - totalDiscount / 100) * 100) / 100;
-    return mrp > p ? mrp : null;
+    if (m <= 0 || totalDiscount < 0 || totalDiscount >= 100) return null;
+    const salePrice = Math.round(m * (1 - totalDiscount / 100) * 100) / 100;
+    return salePrice > 0 ? salePrice : null;
   }
 
   async function api(path, { method = 'GET', body } = {}) {
@@ -263,15 +262,15 @@
     loadProducts();
   });
 
-  // Auto-calculate Original MRP when rate price, category discount, or product discount changes
+  // Auto-calculate Sale Price when MRP, category discount, or product discount changes
   const productForm = $('#product-form');
   const mrpField = productForm.elements.mrp;
   const priceField = productForm.elements.price;
   const discountField = productForm.elements.discount;
   const categoryField = productForm.elements.category_id;
 
-  function updateMrpPreview() {
-    const ratePrice = Number(priceField.value) || 0;
+  function updateSalePricePreview() {
+    const mrp = Number(mrpField.value) || 0;
     const productDiscount = Number(discountField.value) || 0;
     // Find category discount from loaded categories
     const catId = Number(categoryField.value);
@@ -280,15 +279,15 @@
       const cat = categories.find((c) => c.id === catId);
       categoryDiscount = cat?.discount || 0;
     }
-    const mrp = calculateMrp(ratePrice, categoryDiscount, productDiscount);
-    if (mrp && !mrpField.value) {
-      mrpField.value = Math.round(mrp);
+    const salePrice = calculateSalePrice(mrp, categoryDiscount, productDiscount);
+    if (salePrice) {
+      priceField.value = Math.round(salePrice);
     }
   }
 
-  priceField.addEventListener('change', updateMrpPreview);
-  discountField.addEventListener('change', updateMrpPreview);
-  categoryField.addEventListener('change', updateMrpPreview);
+  mrpField.addEventListener('change', updateSalePricePreview);
+  discountField.addEventListener('change', updateSalePricePreview);
+  categoryField.addEventListener('change', updateSalePricePreview);
 
   bindDialog($('#product-dialog'), async (form) => {
     const fd = new FormData(form);

@@ -119,6 +119,8 @@ h1, h2, h3 { font-family: var(--serif); color: var(--maroon-dark); line-height: 
 .tag { position: absolute; top: 10px; left: 10px; background: var(--gold); color: var(--maroon-dark); font-size: .72rem;
   font-weight: 600; padding: 3px 10px; border-radius: 999px; }
 .tag.out { background: #555; color: #fff; }
+.discount-badge { position: absolute; bottom: 10px; right: 10px; background: var(--danger); color: #fff; font-size: .75rem;
+  font-weight: 700; padding: 4px 12px; border-radius: 999px; }
 .card-body { padding: 14px 16px 18px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .card-body h3 { font-size: 1.02rem; margin: 0; }
 .card-body h3 a { color: var(--maroon-dark); }

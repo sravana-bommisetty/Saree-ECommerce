@@ -16,28 +16,30 @@ const SORTS = {
 /* ---------- Discount Calculation ---------- */
 
 /**
- * Calculate MRP (Original Price) from Rate Price and combined discounts
- * Formula: MRP = Rate Price / (1 - (categoryDiscount + productDiscount) / 100)
+ * Calculate Rate Price (Sale Price) from MRP and combined discounts
+ * Formula: Rate Price = MRP × (1 - (categoryDiscount + productDiscount) / 100)
  * 
- * This calculates the ORIGINAL price before any discounts were applied.
- * User provides the Rate Price (sale price), and MRP is calculated from discounts.
+ * User provides the MRP (original price) and discounts.
+ * System calculates the final Rate Price that customer pays.
  * 
- * @param {number} ratePrice - The selling/sale price (entered by user)
+ * Example: MRP ₹100, Discount 90% → Rate Price ₹10
+ * 
+ * @param {number} mrp - The original MRP (entered by user)
  * @param {number} categoryDiscount - Category discount percentage (0-100)
  * @param {number} productDiscount - Product discount percentage (0-100)
- * @returns {number|null} - Calculated original MRP or null if discounts don't result in valid MRP
+ * @returns {number|null} - Calculated sale price or null if invalid
  */
-function calculateMrp(ratePrice, categoryDiscount = 0, productDiscount = 0) {
+function calculateRatePrice(mrp, categoryDiscount = 0, productDiscount = 0) {
   const cd = Number(categoryDiscount) || 0;
   const pd = Number(productDiscount) || 0;
   const totalDiscount = cd + pd;
   
-  // MRP only calculated if total discount is valid
-  if (totalDiscount <= 0 || totalDiscount >= 100) return null;
+  // Rate Price only calculated if MRP and discounts are valid
+  if (!mrp || mrp <= 0 || totalDiscount < 0 || totalDiscount >= 100) return null;
   
-  // MRP = Rate Price / (1 - discount%)
-  const mrp = Math.round(ratePrice / (1 - totalDiscount / 100) * 100) / 100;
-  return mrp > ratePrice ? mrp : null; // MRP must be > rate price
+  // Rate Price = MRP × (1 - discount%)
+  const ratePrice = Math.round(mrp * (1 - totalDiscount / 100) * 100) / 100;
+  return ratePrice > 0 ? ratePrice : null; // Rate price must be > 0
 }
 
 /* ---------- Categories ---------- */
@@ -272,7 +274,7 @@ async function deleteImage(db, imageId) {
 }
 
 module.exports = {
-  calculateMrp,
+  calculateRatePrice,
   listCategories, createCategory, updateCategory, deleteCategory,
   listProducts, filterOptions, getProduct, createProduct, updateProduct, updateStock, listStock, stockHistory,
   deleteProduct, deleteImage,
