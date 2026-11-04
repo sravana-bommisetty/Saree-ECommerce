@@ -226,7 +226,7 @@
     const [data, cats] = await Promise.all([api(`/products?q=${encodeURIComponent(q)}`), api('/categories')]);
     categories = cats;
     $('#products-table').innerHTML =
-      '<tr><th></th><th>Saree</th><th>SKU</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th></th></tr>' +
+      '<tr><th></th><th>Saree</th><th>SKU</th><th>Category</th><th>Discount</th><th>Price</th><th>Stock</th><th>Status</th><th></th></tr>' +
       (data.items
         .map(
           (p) => `<tr>
@@ -234,6 +234,7 @@
           <td><strong>${esc(p.name)}</strong><br><span class="muted">${esc(p.fabric)} · ${esc(p.color)}</span></td>
           <td>${esc(p.sku)}</td>
           <td>${esc(p.category_name || '—')}</td>
+          <td>${p.discount || 0}%</td>
           <td>${inr(p.price)}</td>
           <td class="row-inline"><input class="stock-input" type="number" min="0" value="${p.stock_qty}" data-stock="${p.id}" aria-label="Stock for ${esc(p.name)}"><button class="btn btn-outline" data-save-stock="${p.id}">Save</button></td>
           <td>${p.is_active ? pill('live') : pill('off')}${p.is_featured ? ' ⭐' : ''}</td>
