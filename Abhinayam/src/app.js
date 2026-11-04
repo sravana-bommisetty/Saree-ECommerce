@@ -4,14 +4,17 @@ const session = require('express-session');
 const helmet = require('helmet');
 const { publicRoutes } = require('./routes/public');
 const { adminRoutes } = require('./routes/admin');
+const { paymentRoutes } = require('./routes/payment');
 const { ensureSettings } = require('./services/settings');
 const { ensureAdmin } = require('./auth');
 const seo = require('./seo');
 const { HttpError } = require('./lib/validate');
+const { runOrdersMigration } = require('./lib/migrations-orders');
 
 async function createApp({ db, config }) {
   await ensureSettings(db, config.defaults);
   await ensureAdmin(db, config.admin);
+  await runOrdersMigration(db);
 
   const app = express();
   app.disable('x-powered-by');
@@ -23,11 +26,11 @@ async function createApp({ db, config }) {
       contentSecurityPolicy: {
         directives: {
           defaultSrc: ["'self'"],
-          scriptSrc: ["'self'"],
+          scriptSrc: ["'self'", 'https://checkout.razorpay.com'],
           styleSrc: ["'self'", 'https://fonts.googleapis.com'],
           fontSrc: ["'self'", 'https://fonts.gstatic.com'],
           imgSrc: ["'self'", 'data:', 'blob:', 'https://br-sweet-recipe-bel6wz8n.storage.c-9.us-east-2.aws.neon.tech'],
-          connectSrc: ["'self'"],
+          connectSrc: ["'self'", 'https://api.razorpay.com'],
           upgradeInsecureRequests: config.isProd ? [] : null,
         },
       },
@@ -45,6 +48,7 @@ async function createApp({ db, config }) {
   );
 
   app.get('/healthz', (_req, res) => res.json({ status: 'ok' }));
+  app.use('/api/payment', paymentRoutes(db, config));
   app.use('/api/admin', adminRoutes(db, config));
   app.use('/api', publicRoutes(db));
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found' }));

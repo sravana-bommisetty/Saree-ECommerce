@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secure Payment - Abhinayam Silks</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .payment-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 500px;
+      width: 100%;
+      padding: 40px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      color: #8B4513;
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      color: #333;
+      font-weight: 500;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    .price-display {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border-left: 4px solid #8B4513;
+    }
+
+    .price-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      color: #555;
+    }
+
+    .price-item:last-child {
+      margin-bottom: 0;
+      padding-top: 10px;
+      border-top: 1px solid #ddd;
+      font-weight: bold;
+      color: #8B4513;
+      font-size: 16px;
+    }
+
+    .payment-methods {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .payment-method {
+      position: relative;
+    }
+
+    .payment-method input[type="radio"] {
+      display: none;
+    }
+
+    .payment-method-label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 15px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-align: center;
+    }
+
+    .payment-method input[type="radio"]:checked + .payment-method-label {
+      border-color: #667eea;
+      background-color: rgba(102, 126, 234, 0.1);
+    }
+
+    .payment-method-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .payment-method-name {
+      font-weight: 600;
+      color: #333;
+      font-size: 13px;
+    }
+
+    .whatsapp-option {
+      background: #f0fdf4;
+      border: 2px solid #dcfce7;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .whatsapp-option input[type="checkbox"] {
+      width: auto;
+      cursor: pointer;
+    }
+
+    .whatsapp-option label {
+      margin: 0;
+      cursor: pointer;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .error {
+      background: #fee;
+      color: #c33;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .success {
+      background: #efe;
+      color: #3c3;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .security-badges {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+      text-align: center;
+      font-size: 12px;
+      color: #999;
+    }
+
+    .badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .badge-icon {
+      font-size: 20px;
+    }
+
+    @media (max-width: 600px) {
+      .payment-container {
+        padding: 25px;
+      }
+
+      .form-row, .payment-methods {
+        grid-template-columns: 1fr;
+      }
+
+      .header h1 {
+        font-size: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="payment-container">
+    <div class="header">
+      <h1>🛍️ Secure Payment</h1>
+      <p>Complete your purchase with Razorpay</p>
+    </div>
+
+    <div class="error" id="errorMessage"></div>
+    <div class="success" id="successMessage"></div>
+
+    <form id="paymentForm">
+      <!-- Customer Details -->
+      <div class="form-group">
+        <label for="customerName">Full Name *</label>
+        <input
+          type="text"
+          id="customerName"
+          name="customerName"
+          required
+          placeholder="Enter your full name"
+        />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="customerPhone">Phone Number *</label>
+          <input
+            type="tel"
+            id="customerPhone"
+            name="customerPhone"
+            required
+            placeholder="10-digit phone number"
+            pattern="\d{10}"
+          />
+        </div>
+        <div class="form-group">
+          <label for="customerEmail">Email *</label>
+          <input
+            type="email"
+            id="customerEmail"
+            name="customerEmail"
+            required
+            placeholder="your@email.com"
+          />
+        </div>
+      </div>
+
+      <!-- Order Summary -->
+      <div class="price-display">
+        <div class="price-item">
+          <span>Saree Price</span>
+          <span id="priceAmount">₹0</span>
+        </div>
+        <div class="price-item">
+          <span>Shipping</span>
+          <span id="shippingAmount">Free</span>
+        </div>
+        <div class="price-item">
+          <span>Total Amount</span>
+          <span id="totalAmount">₹0</span>
+        </div>
+      </div>
+
+      <!-- Payment Method Selection -->
+      <label style="margin-bottom: 12px; display: block;">Payment Method *</label>
+      <div class="payment-methods">
+        <div class="payment-method">
+          <input type="radio" id="upi" name="paymentMethod" value="upi" checked />
+          <label for="upi" class="payment-method-label">
+            <div class="payment-method-icon">📱</div>
+            <div class="payment-method-name">UPI</div>
+          </label>
+        </div>
+        <div class="payment-method">
+          <input type="radio" id="card" name="paymentMethod" value="card" />
+          <label for="card" class="payment-method-label">
+            <div class="payment-method-icon">💳</div>
+            <div class="payment-method-name">Card</div>
+          </label>
+        </div>
+      </div>
+
+      <!-- WhatsApp Notification Option -->
+      <div class="whatsapp-option">
+        <input
+          type="checkbox"
+          id="sendWhatsApp"
+          name="sendWhatsApp"
+          checked
+        />
+        <label for="sendWhatsApp">
+          📲 Send payment link via WhatsApp (saves time!)
+        </label>
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" class="submit-btn" id="submitBtn">
+        Proceed to Payment
+      </button>
+
+      <div class="loading" id="loadingIndicator">
+        <div class="spinner"></div>
+        <p>Processing your payment...</p>
+      </div>
+    </form>
+
+    <!-- Security Badges -->
+    <div class="security-badges">
+      <div class="badge">
+        <span class="badge-icon">🔒</span>
+        <span>Secure Payment</span>
+      </div>
+      <div class="badge">
+        <span class="badge-icon">✓</span>
+        <span>Verified Merchant</span>
+      </div>
+      <div class="badge">
+        <span class="badge-icon">⚡</span>
+        <span>Instant Confirmation</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Razorpay Script -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+  <script>
+    // Sample order data - in production, this would come from your backend
+    const ORDER_AMOUNT = 999; // ₹999
+    const PRODUCTS = [
+      { name: 'Beautiful Saree', quantity: 1, price: 999 }
+    ];
+
+    // Update display
+    document.getElementById('priceAmount').textContent = `₹${ORDER_AMOUNT}`;
+    document.getElementById('totalAmount').textContent = `₹${ORDER_AMOUNT}`;
+
+    // Form submission
+    document.getElementById('paymentForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(e.target);
+      const data = {
+        orderId: `ORDER-${Date.now()}`,
+        amount: ORDER_AMOUNT,
+        customer: {
+          name: formData.get('customerName'),
+          phone: formData.get('customerPhone'),
+          email: formData.get('customerEmail'),
+        },
+        items: PRODUCTS,
+        sendViaWhatsApp: document.getElementById('sendWhatsApp').checked,
+      };
+
+      try {
+        showLoading(true);
+        hideError();
+
+        // Create payment order
+        const response = await fetch('/api/payment/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+          throw new Error('Payment initialization failed');
+        }
+
+        const paymentData = await response.json();
+
+        if (!paymentData.success) {
+          throw new Error(paymentData.error || 'Payment failed');
+        }
+
+        // If WhatsApp option is selected, show confirmation
+        if (data.sendViaWhatsApp) {
+          showSuccess(
+            `✅ Payment link sent to ${data.customer.phone} via WhatsApp! Click it to complete payment.`
+          );
+          // Optionally redirect or wait
+          setTimeout(() => {
+            // In production, redirect to order tracking or home
+            window.location.href = `/order-confirmation?orderId=${paymentData.orderId}`;
+          }, 3000);
+          return;
+        }
+
+        // Otherwise, open Razorpay checkout
+        openRazorpayCheckout(paymentData, data.customer);
+      } catch (error) {
+        showError(error.message);
+      } finally {
+        showLoading(false);
+      }
+    });
+
+    function openRazorpayCheckout(paymentData, customer) {
+      const options = {
+        key: paymentData.keyId,
+        amount: paymentData.amount,
+        currency: 'INR',
+        name: 'Abhinayam Silks',
+        description: 'Saree Purchase',
+        order_id: paymentData.razorpayOrderId,
+        handler: async (response) => {
+          try {
+            // Verify payment
+            const verifyResponse = await fetch('/api/payment/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                orderId: paymentData.orderId,
+                paymentId: response.razorpay_payment_id,
+                signature: response.razorpay_signature,
+              }),
+            });
+
+            if (!verifyResponse.ok) {
+              throw new Error('Payment verification failed');
+            }
+
+            showSuccess('✅ Payment successful! Redirecting...');
+            setTimeout(() => {
+              window.location.href = `/order-confirmation?orderId=${paymentData.orderId}`;
+            }, 2000);
+          } catch (error) {
+            showError('Payment verification failed: ' + error.message);
+          }
+        },
+        prefill: {
+          name: customer.name,
+          email: customer.email,
+          contact: customer.phone,
+        },
+        theme: {
+          color: '#667eea',
+        },
+        modal: {
+          confirm_close: true,
+        },
+      };
+
+      const rzp = new Razorpay(options);
+      rzp.open();
+    }
+
+    function showLoading(show) {
+      document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
+      document.getElementById('submitBtn').disabled = show;
+    }
+
+    function showError(message) {
+      const errorEl = document.getElementById('errorMessage');
+      errorEl.textContent = message;
+      errorEl.style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function hideError() {
+      document.getElementById('errorMessage').style.display = 'none';
+    }
+
+    function showSuccess(message) {
+      const successEl = document.getElementById('successMessage');
+      successEl.textContent = message;
+      successEl.style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  </script>
+</body>
+</html>
