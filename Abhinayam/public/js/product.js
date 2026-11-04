@@ -14,14 +14,16 @@
   try {
     const [p, s] = await Promise.all([api(`/api/products/${encodeURIComponent(slug)}`), getSettings()]);
     const images = p.images.length ? p.images : [{ url: '/images/placeholder-saree.svg', alt: p.name }];
-    // Show strikethrough Original MRP (always show if MRP exists and is greater than rate price)
-    const mrp = (p.mrp && p.mrp > p.price) ? `<s>${inr(p.mrp)}</s>` : '';
     
-    // Discount display: show discount percentages and savings if discounts exist
+    // Discount and pricing display
     const categoryDiscount = p.category_discount || 0;
     const productDiscount = p.discount || 0;
     const totalDiscount = categoryDiscount + productDiscount;
-    const discountDisplay = totalDiscount > 0 ? `<p class="discount-info"><strong>Discount:</strong> ${totalDiscount}% off${categoryDiscount > 0 ? ` (${categoryDiscount}% category + ${productDiscount}% product)` : ''}</p>` : '';
+    
+    // Format: Price  ~~MRP~~  90% OFF (all on same line)
+    const mrpStrikethrough = (p.mrp && p.mrp > p.price) ? ` <s>${inr(p.mrp)}</s>` : '';
+    const discountBadge = totalDiscount > 0 ? ` <strong class="discount-badge-inline">${Math.round(totalDiscount)}% OFF</strong>` : '';
+    const priceDisplay = `${inr(p.price)}${mrpStrikethrough}${discountBadge}`;
 
     root.innerHTML = `
       <nav class="breadcrumb"><a href="/">Home</a> / <a href="/shop">Shop</a>${p.category_slug ? ` / <a href="/shop?category=${encodeURIComponent(p.category_slug)}">${escapeHtml(p.category_name)}</a>` : ''} / ${escapeHtml(p.name)}</nav>
@@ -32,9 +34,8 @@
         </div>
         <div>
           <h1>${escapeHtml(p.name)}</h1>
-          <div class="price">${mrp ? mrp + ' ' : ''}${inr(p.price)}</div>
+          <div class="price">${priceDisplay}</div>
           <p class="muted">Inclusive of all taxes</p>
-          ${discountDisplay}
           <p>${stockLabel(p)}</p>
           <dl class="specs">
             <dt>Fabric</dt><dd>${escapeHtml(p.fabric || '—')}</dd>

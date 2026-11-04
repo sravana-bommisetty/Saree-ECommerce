@@ -126,7 +126,8 @@ h1, h2, h3 { font-family: var(--serif); color: var(--maroon-dark); line-height: 
 .card-body h3 a { color: var(--maroon-dark); }
 .card-meta { font-size: .82rem; color: var(--muted); }
 .price { font-weight: 600; color: var(--maroon); font-size: 1.1rem; }
-.price s { color: var(--muted); font-weight: 400; font-size: .85rem; margin-left: 6px; }
+.price s { color: var(--muted); font-weight: 400; font-size: .85rem; margin-left: 8px; margin-right: 8px; }
+.discount-badge-inline { background: var(--danger); color: #fff; padding: 3px 10px; border-radius: 999px; font-size: 0.85rem; margin-left: 8px; }
 .discount-info { background: var(--gold-light); border-left: 3px solid var(--gold); padding: 10px 12px; margin: 12px 0; border-radius: 6px; font-size: .9rem; color: var(--maroon-dark); margin-bottom: 16px; }
 .card-actions { margin-top: auto; padding-top: 10px; display: flex; gap: 8px; }
 .card-actions .btn { padding: 8px 12px; font-size: .82rem; flex: 1; }
