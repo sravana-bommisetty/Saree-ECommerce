@@ -158,11 +158,11 @@
   async function loadCategories() {
     categories = await api('/categories');
     $('#categories-table').innerHTML =
-      '<tr><th>Order</th><th>Name</th><th>Description</th><th>Sarees</th><th></th></tr>' +
+      '<tr><th>Order</th><th>Name</th><th>Description</th><th>Discount</th><th>Sarees</th><th></th></tr>' +
       categories
         .map(
           (c) => `<tr>
-          <td>${c.sort_order}</td><td><strong>${esc(c.name)}</strong></td><td>${esc(c.description)}</td><td>${c.product_count}</td>
+          <td>${c.sort_order}</td><td><strong>${esc(c.name)}</strong></td><td>${esc(c.description)}</td><td>${c.discount || 0}%</td><td>${c.product_count}</td>
           <td class="row-inline"><button class="btn btn-outline" data-edit-cat="${c.id}">Edit</button><button class="btn btn-outline" data-del-cat="${c.id}">Delete</button></td>
         </tr>`
         )
