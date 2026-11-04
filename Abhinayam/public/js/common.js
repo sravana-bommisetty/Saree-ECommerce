@@ -92,6 +92,7 @@
           <div class="card-meta">${escapeHtml(p.fabric)}${p.color ? ' · ' + escapeHtml(p.color) : ''}</div>
           <div class="price">${mrp ? mrp + ' ' : ''}${inr(p.price)}</div>
           <div class="card-actions">
+            ${p.in_stock ? `<input type="number" class="qty-input" data-product="${p.id}" min="1" max="${p.stock_qty}" value="1" title="Quantity (max ${p.stock_qty})">` : ''}
             <button class="btn" data-add="${p.id}" ${p.in_stock ? '' : 'disabled'}>Add to bag</button>
             <a class="btn btn-wa" data-enquire="${p.id}" href="#" aria-label="Enquire on WhatsApp">Enquire</a>
           </div>
@@ -117,8 +118,25 @@
     if (!p) return;
     e.preventDefault();
     if (add) {
-      cart.add(p);
-      toast('Added to your bag');
+      // Get quantity from associated input or default to 1
+      const qtyInput = add.parentElement?.querySelector(`.qty-input[data-product="${p.id}"]`);
+      const qty = qtyInput ? Math.min(parseInt(qtyInput.value) || 1, p.stock_qty) : 1;
+      
+      if (qty < 1) {
+        toast('Please select at least 1 item');
+        return;
+      }
+      if (qty > p.stock_qty) {
+        toast(`Only ${p.stock_qty} items available`);
+        return;
+      }
+      
+      // Add multiple items to cart
+      for (let i = 0; i < qty; i++) {
+        cart.add(p);
+      }
+      toast(`Added ${qty} item${qty > 1 ? 's' : ''} to your bag`);
+      if (qtyInput) qtyInput.value = '1';
     } else {
       const s = await getSettings();
       window.open(waLink(s.whatsapp_number, enquiryText(p)), '_blank', 'noopener');

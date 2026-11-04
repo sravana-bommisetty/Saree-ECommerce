@@ -45,6 +45,11 @@
           </dl>
           <p class="prose-inline">${escapeHtml(p.description)}</p>
           <div class="actions">
+            <div class="qty-selector" ${p.in_stock ? '' : 'style="display:none"'}>
+              <label for="qty">Quantity:</label>
+              <input type="number" id="qty" min="1" max="${p.stock_qty}" value="1">
+              <span class="stock-info">(${p.stock_qty} available)</span>
+            </div>
             <button class="btn" id="add" ${p.in_stock ? '' : 'disabled'}>Add to bag</button>
             <a class="btn btn-wa" href="${escapeHtml(waLink(s.whatsapp_number, enquiryText(p)))}" target="_blank" rel="noopener">Enquire on WhatsApp</a>
           </div>
@@ -58,7 +63,27 @@
       $('#main-img').src = b.dataset.src;
       root.querySelectorAll('.thumbs button').forEach((x) => x.classList.toggle('active', x === b));
     });
-    $('#add').addEventListener('click', () => { cart.add(p); toast('Added to your bag'); });
+    
+    $('#add').addEventListener('click', () => {
+      const qtyInput = document.getElementById('qty');
+      const qty = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
+      
+      if (qty < 1) {
+        toast('Please select at least 1 item');
+        return;
+      }
+      if (qty > p.stock_qty) {
+        toast(`Only ${p.stock_qty} items available`);
+        return;
+      }
+      
+      // Add multiple items to cart
+      for (let i = 0; i < qty; i++) {
+        cart.add(p);
+      }
+      toast(`Added ${qty} item${qty > 1 ? 's' : ''} to your bag`);
+      if (qtyInput) qtyInput.value = '1';
+    });
 
     if (p.category_slug) {
       const related = (await api(`/api/products?category=${encodeURIComponent(p.category_slug)}&limit=5`)).items.filter((x) => x.id !== p.id).slice(0, 4);
