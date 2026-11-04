@@ -39,7 +39,11 @@ async function start() {
     process.on('SIGINT', shutdown);
     process.on('SIGTERM', shutdown);
   } catch (err) {
-    console.error('Failed to start application:', err.message);
+    console.error('Failed to start application:', err.message || err);
+    // AggregateError (e.g. failed DB connection) has an empty top-level message.
+    if (err.errors) {
+      for (const sub of err.errors) console.error('  -', sub.message);
+    }
     await db.close();
     process.exit(1);
   }

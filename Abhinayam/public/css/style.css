@@ -78,6 +78,7 @@ h1, h2, h3 { font-family: var(--serif); color: var(--maroon-dark); line-height: 
   .nav.open { display: flex; }
   .nav a { padding: 12px 0; border-bottom: 1px solid var(--line); }
   .header-search { display: none; }
+  .header-actions { margin-left: auto; }
   .brand img { height: 44px; width: 44px; }
 }
 
