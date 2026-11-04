@@ -191,9 +191,29 @@
   });
   bindDialog($('#category-dialog'), async (form) => {
     const fd = new FormData(form);
+    const oldDiscount = editingCategory?.discount || 0;
+    const newDiscount = parseFloat(fd.get('discount')) || 0;
+    
     if (!fd.get('image')?.size) fd.delete('image');
     await api(editingCategory ? `/categories/${editingCategory.id}` : '/categories', { method: editingCategory ? 'PUT' : 'POST', body: fd });
-    flash('Category saved');
+    
+    // If updating an existing category and discount changed, update all saree prices
+    if (editingCategory && oldDiscount !== newDiscount) {
+      const sarees = await api(`/products?category=${editingCategory.id}&limit=999`);
+      if (sarees.items && sarees.items.length > 0) {
+        for (const saree of sarees.items) {
+          // Recalculate sale price with new category discount
+          if (saree.mrp) {
+            const productDiscount = saree.discount || 0;
+            const totalDiscount = newDiscount + productDiscount;
+            const newPrice = Math.round(saree.mrp * (1 - totalDiscount / 100));
+            await api(`/products/${saree.id}`, { method: 'PUT', body: { price: newPrice } }).catch(() => {});
+          }
+        }
+      }
+    }
+    
+    flash('Category saved' + (oldDiscount !== newDiscount && editingCategory ? ' – saree prices updated' : ''));
     loadCategories();
   });
 
