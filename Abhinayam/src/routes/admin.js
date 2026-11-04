@@ -23,7 +23,7 @@ function adminRoutes(db, config) {
 
   // Cleans up uploaded files if the DB operation fails.
   const withUploads = (handler) => async (req, res) => {
-    const urls = fileUrls(req);
+    const urls = fileUrls(req, config);
     try {
       res.json(await handler(req, urls));
     } catch (err) {

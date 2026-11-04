@@ -145,14 +145,39 @@ function createUploader(config) {
   return wrappedUpload;
 }
 
-const fileUrls = (req) => (req.files || (req.file ? [req.file] : [])).map((f) => URL_PREFIX + f.filename);
+const fileUrls = (req, config) => {
+  const files = req.files || (req.file ? [req.file] : []);
+  
+  if (config?.aws?.endpoint && config?.aws?.bucket) {
+    // For S3 uploads, return full S3 URLs
+    return files.map((f) => {
+      const fileName = f.filename || f.originalname;
+      return `${config.aws.endpoint}/${config.aws.bucket}/${fileName}`;
+    });
+  }
+  
+  // For local uploads, return /uploads/ URLs
+  return files.map((f) => URL_PREFIX + f.filename);
+};
 
 function removeUpload(config, url) {
-  if (typeof url !== 'string' || !url.startsWith(URL_PREFIX)) return;
+  if (typeof url !== 'string') return;
   
   if (config.aws && config.aws.bucket) {
     const s3 = getS3Client(config.aws);
-    const fileName = url.substring(URL_PREFIX.length);
+    
+    // Extract filename from S3 URL
+    let fileName;
+    if (url.startsWith(config.aws.endpoint)) {
+      // Full S3 URL: https://endpoint/bucket/filename
+      const parts = url.substring(config.aws.endpoint.length).split('/');
+      fileName = parts.slice(2).join('/'); // Remove endpoint and bucket
+    } else if (url.startsWith(URL_PREFIX)) {
+      // Local URL: /uploads/filename
+      fileName = url.substring(URL_PREFIX.length);
+    } else {
+      return;
+    }
     
     const deleteCmd = new DeleteObjectCommand({
       Bucket: config.aws.bucket,
