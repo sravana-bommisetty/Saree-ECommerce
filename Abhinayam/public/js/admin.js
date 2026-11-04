@@ -184,9 +184,10 @@
     const edit = e.target.closest('[data-edit-cat]');
     const del = e.target.closest('[data-del-cat]');
     if (edit) openCategory(categories.find((c) => c.id === Number(edit.dataset.editCat)));
-    if (del && confirm('Delete this category? Sarees in it will become uncategorised.')) {
+    if (del && confirm('Delete this category and ALL sarees in it? This cannot be undone.')) {
       await api(`/categories/${del.dataset.delCat}`, { method: 'DELETE' }).catch((err) => flash(err.message));
       loadCategories();
+      loadProducts();
     }
   });
   bindDialog($('#category-dialog'), async (form) => {

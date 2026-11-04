@@ -88,6 +88,14 @@ async function updateCategory(db, id, body, imageUrl = null) {
 }
 
 async function deleteCategory(db, id) {
+  // First, delete all product images for products in this category
+  await db.prepare(`DELETE FROM product_images 
+    WHERE product_id IN (SELECT id FROM products WHERE category_id = ?)`).run(id);
+  
+  // Then, delete all products in this category
+  await db.prepare('DELETE FROM products WHERE category_id = ?').run(id);
+  
+  // Finally, delete the category itself
   const { changes } = await db.prepare('DELETE FROM categories WHERE id = ?').run(id);
   if (!changes) throw notFound('Category not found');
 }
