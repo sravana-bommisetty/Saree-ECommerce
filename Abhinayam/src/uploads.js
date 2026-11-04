@@ -1,6 +1,6 @@
 'use strict';
 const crypto = require('node:crypto');
-const { S3Client, DeleteObjectCommand, CopyObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { Upload } = require('@aws-sdk/lib-storage');
 const multer = require('multer');
 const { badRequest } = require('./lib/validate');
@@ -152,6 +152,8 @@ const fileUrls = (req, config) => {
     // For S3 uploads, return full S3 URLs
     return files.map((f) => {
       const fileName = f.filename || f.originalname;
+      // Direct URL: https://endpoint/bucket/filename
+      // No path reorganization - keep it simple
       return `${config.aws.endpoint}/${config.aws.bucket}/${fileName}`;
     });
   }
@@ -195,59 +197,4 @@ function removeUpload(config, url) {
   }
 }
 
-/**
- * Reorganize uploaded files to have a structured path
- * @param {string} url - The current file URL
- * @param {string} newPath - New path prefix (e.g., "categoryid/sareeid" or "sareeid")
- * @param {object} config - Application config with AWS credentials
- * @returns {string|null} - New URL or null if reorganization failed
- */
-async function reorganizeUploadPath(url, newPath, config) {
-  if (!url || !newPath || !config.aws) return url;
-  
-  const s3 = getS3Client(config.aws);
-  
-  // Extract current filename from URL
-  let oldFileName;
-  if (url.startsWith(config.aws.endpoint)) {
-    const parts = url.substring(config.aws.endpoint.length).split('/');
-    oldFileName = parts.slice(2).join('/');
-  } else if (url.startsWith(URL_PREFIX)) {
-    oldFileName = url.substring(URL_PREFIX.length);
-  } else {
-    return url;
-  }
-  
-  // Extract just the filename (e.g., "1730752267000-abc123.jpg" from oldFileName)
-  const justFilename = oldFileName.split('/').pop();
-  const newFileName = `${newPath}/${justFilename}`;
-  
-  try {
-    console.log(`[uploads] Reorganizing: ${oldFileName} -> ${newFileName}`);
-    
-    // Copy to new location
-    const copyCmd = new CopyObjectCommand({
-      Bucket: config.aws.bucket,
-      CopySource: `${config.aws.bucket}/${oldFileName}`,
-      Key: newFileName,
-    });
-    await s3.send(copyCmd);
-    
-    // Delete old location
-    const deleteCmd = new DeleteObjectCommand({
-      Bucket: config.aws.bucket,
-      Key: oldFileName,
-    });
-    await s3.send(deleteCmd);
-    
-    const newUrl = `${config.aws.endpoint}/${config.aws.bucket}/${newFileName}`;
-    console.log(`[uploads] ✅ Reorganized to: ${newFileName}`);
-    return newUrl;
-  } catch (err) {
-    const friendlyError = formatS3Error(err);
-    console.warn(`[uploads] ⚠️ Could not reorganize ${oldFileName}: ${friendlyError}`);
-    return url; // Return original URL if reorganization fails
-  }
-}
-
-module.exports = { createUploader, fileUrls, removeUpload, reorganizeUploadPath };
+module.exports = { createUploader, fileUrls, removeUpload };

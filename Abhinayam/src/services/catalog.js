@@ -186,43 +186,29 @@ function parseProduct(body) {
 }
 
 async function addImages(db, productId, urls, alt, config = null) {
+  if (!urls || urls.length === 0) return;
+  
   const start = (await db.prepare('SELECT COALESCE(MAX(sort_order), -1) + 1 AS n FROM product_images WHERE product_id = ?').get(productId)).n;
   const insert = db.prepare('INSERT INTO product_images (product_id, url, alt, sort_order) VALUES (?, ?, ?, ?)');
   
-  // Get category_id for organized path
-  const product = await db.prepare('SELECT category_id FROM products WHERE id = ?').get(productId);
-  const categoryId = product?.category_id || '';
-  
-  console.log(`[catalog] addImages() - ProductID: ${productId}, URLs count: ${urls.length}, CategoryID: ${categoryId}`);
-  
   for (const [index, url] of urls.entries()) {
-    let finalUrl = url;
-    
-    console.log(`[catalog] [${index + 1}/${urls.length}] Processing URL: ${url}`);
-    
-    // Reorganize path to: categoryid/sareeid/image
-    if (config && categoryId) {
-      const { reorganizeUploadPath } = require('../uploads');
-      const newPath = `${categoryId}/${productId}`;
-      finalUrl = await reorganizeUploadPath(url, newPath, config);
-      console.log(`[catalog] [${index + 1}/${urls.length}] Reorganized URL: ${finalUrl}`);
+    if (url) {
+      console.log(`[catalog] Saving image ${index + 1}: ${url}`);
+      await insert.run(productId, url, alt, start + index);
     }
-    
-    console.log(`[catalog] [${index + 1}/${urls.length}] Saving to DB: ${finalUrl}`);
-    await insert.run(productId, finalUrl, alt, start + index);
   }
   
-  console.log(`[catalog] addImages() - Completed for ProductID: ${productId}`);
+  console.log(`[catalog] Saved ${urls.length} images for product ${productId}`);
 }
 
 const PRODUCT_COLUMNS = ['sku', 'name', 'slug', 'category_id', 'fabric', 'color', 'price', 'mrp', 'discount', 'description', 'stock_qty', 'is_featured', 'is_active'];
 
-async function createProduct(db, body, imageUrls = [], config = null) {
+async function createProduct(db, body, imageUrls = []) {
   const p = parseProduct(body);
   const { lastInsertRowid } = await db
     .prepare(`INSERT INTO products (${PRODUCT_COLUMNS.join(', ')}) VALUES (${PRODUCT_COLUMNS.map(() => '?').join(', ')}) RETURNING id`)
     .run(...PRODUCT_COLUMNS.map((k) => p[k]));
-  await addImages(db, lastInsertRowid, imageUrls, p.name, config);
+  await addImages(db, lastInsertRowid, imageUrls, p.name);
   return getProduct(db, { id: Number(lastInsertRowid) }, { includeInactive: true });
 }
 
@@ -233,7 +219,7 @@ async function logStockChange(db, product, newQty, { note = '', changedBy = 'sys
   ).run(product.id, product.sku, product.name, product.stock_qty, newQty, note, changedBy);
 }
 
-async function updateProduct(db, id, body, imageUrls = [], { changedBy, config = null } = {}) {
+async function updateProduct(db, id, body, imageUrls = [], { changedBy } = {}) {
   const before = await getProduct(db, { id }, { includeInactive: true });
   const p = parseProduct(body);
   await transaction(db, async () => {
@@ -241,7 +227,7 @@ async function updateProduct(db, id, body, imageUrls = [], { changedBy, config =
       ...PRODUCT_COLUMNS.map((k) => p[k]), id
     );
     if (before.stock_qty !== p.stock_qty) await logStockChange(db, before, p.stock_qty, { changedBy, note: 'Edited in product form' });
-    await addImages(db, id, imageUrls, p.name, config);
+    await addImages(db, id, imageUrls, p.name);
   });
   return getProduct(db, { id }, { includeInactive: true });
 }

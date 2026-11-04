@@ -97,8 +97,8 @@ function adminRoutes(db, config) {
 
   r.get('/products', async (req, res) => res.json(await catalog.listProducts(db, { limit: 100, sort: 'newest', ...req.query }, { includeInactive: true })));
   r.get('/products/:id', async (req, res) => res.json(await catalog.getProduct(db, { id: idParam(req) }, { includeInactive: true })));
-  r.post('/products', upload.array('images', 8), withUploads((req, urls) => catalog.createProduct(db, req.body, urls, config)));
-  r.put('/products/:id', upload.array('images', 8), withUploads((req, urls) => catalog.updateProduct(db, idParam(req), req.body, urls, { ...byUser(req), config })));
+  r.post('/products', upload.array('images', 8), withUploads((req, urls) => catalog.createProduct(db, req.body, urls)));
+  r.put('/products/:id', upload.array('images', 8), withUploads((req, urls) => catalog.updateProduct(db, idParam(req), req.body, urls, byUser(req))));
   r.delete('/products/:id', async (req, res) => {
     (await catalog.deleteProduct(db, idParam(req))).forEach((url) => removeUpload(config, url));
     res.json({ ok: true });
