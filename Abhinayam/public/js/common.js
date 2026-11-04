@@ -77,11 +77,8 @@
   function productCard(p) {
     const img = p.image_url || '/images/placeholder-saree.svg';
     const tag = !p.in_stock ? '<span class="tag out">Sold out</span>' : p.stock_qty <= 2 ? `<span class="tag">Only ${p.stock_qty} left</span>` : p.is_featured ? '<span class="tag">Bestseller</span>' : '';
-    // Show strikethrough MRP only when BOTH category and product discounts exist
-    const categoryDiscount = p.category_discount || 0;
-    const productDiscount = p.discount || 0;
-    const hasBothDiscounts = categoryDiscount > 0 && productDiscount > 0;
-    const mrp = (p.mrp && p.mrp > p.price && hasBothDiscounts) ? `<s>${inr(p.mrp)}</s>` : '';
+    // Show strikethrough Original MRP (always show if MRP exists and is greater than rate price)
+    const mrp = (p.mrp && p.mrp > p.price) ? `<s>${inr(p.mrp)}</s>` : '';
     return `
       <article class="card">
         <a class="card-img" href="/saree/${encodeURIComponent(p.slug)}">
@@ -90,7 +87,7 @@
         <div class="card-body">
           <h3><a href="/saree/${encodeURIComponent(p.slug)}">${escapeHtml(p.name)}</a></h3>
           <div class="card-meta">${escapeHtml(p.fabric)}${p.color ? ' · ' + escapeHtml(p.color) : ''}</div>
-          <div class="price">${inr(p.price)}${mrp}</div>
+          <div class="price">${mrp ? mrp + ' ' : ''}${inr(p.price)}</div>
           <div class="card-actions">
             <button class="btn" data-add="${p.id}" ${p.in_stock ? '' : 'disabled'}>Add to bag</button>
             <a class="btn btn-wa" data-enquire="${p.id}" href="#" aria-label="Enquire on WhatsApp">Enquire</a>

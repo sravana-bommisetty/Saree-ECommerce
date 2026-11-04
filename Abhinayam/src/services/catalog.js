@@ -16,22 +16,28 @@ const SORTS = {
 /* ---------- Discount Calculation ---------- */
 
 /**
- * Calculate MRP based on price and combined discounts
- * Formula: MRP = Price / (1 - (categoryDiscount + productDiscount) / 100)
- * @param {number} price - Selling price
+ * Calculate MRP (Original Price) from Rate Price and combined discounts
+ * Formula: MRP = Rate Price / (1 - (categoryDiscount + productDiscount) / 100)
+ * 
+ * This calculates the ORIGINAL price before any discounts were applied.
+ * User provides the Rate Price (sale price), and MRP is calculated from discounts.
+ * 
+ * @param {number} ratePrice - The selling/sale price (entered by user)
  * @param {number} categoryDiscount - Category discount percentage (0-100)
  * @param {number} productDiscount - Product discount percentage (0-100)
- * @returns {number|null} - Auto-calculated MRP or null if both discounts don't exist
+ * @returns {number|null} - Calculated original MRP or null if discounts don't result in valid MRP
  */
-function calculateMrp(price, categoryDiscount = 0, productDiscount = 0) {
+function calculateMrp(ratePrice, categoryDiscount = 0, productDiscount = 0) {
   const cd = Number(categoryDiscount) || 0;
   const pd = Number(productDiscount) || 0;
-  // MRP only auto-calculated when BOTH category and product discounts exist
-  if (cd <= 0 || pd <= 0) return null;
   const totalDiscount = cd + pd;
-  if (totalDiscount >= 100) return null; // 100% discount = no MRP
-  const mrp = Math.round(price / (1 - totalDiscount / 100) * 100) / 100;
-  return mrp > price ? mrp : null; // MRP must be > price
+  
+  // MRP only calculated if total discount is valid
+  if (totalDiscount <= 0 || totalDiscount >= 100) return null;
+  
+  // MRP = Rate Price / (1 - discount%)
+  const mrp = Math.round(ratePrice / (1 - totalDiscount / 100) * 100) / 100;
+  return mrp > ratePrice ? mrp : null; // MRP must be > rate price
 }
 
 /* ---------- Categories ---------- */
