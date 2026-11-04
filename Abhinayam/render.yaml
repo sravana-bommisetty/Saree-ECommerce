@@ -1,0 +1,96 @@
+services:
+  # Main web service (Node.js/Express application)
+  - type: web
+    name: abhinayam-silks
+    runtime: node
+    plan: standard
+    
+    # Build and start commands
+    buildCommand: npm install
+    startCommand: npm start
+    
+    # Environment configuration
+    envVars:
+      # Required: PostgreSQL connection string (from Neon)
+      - key: DATABASE_URL
+        scope: build,runtime
+        # Sync with Neon PostgreSQL – update with your actual connection string
+        value: # Set in Render dashboard secrets
+      
+      # Required: Express server configuration
+      - key: NODE_ENV
+        value: production
+      
+      - key: PORT
+        value: 3000
+      
+      # Optional: Public base URL (Render provides RENDER_EXTERNAL_URL automatically)
+      - key: PUBLIC_BASE_URL
+        scope: runtime
+        value: # Will auto-use RENDER_EXTERNAL_URL if not set
+      
+      # Required: Session secret for session management
+      # Generate a long random string: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+      - key: SESSION_SECRET
+        scope: runtime
+        value: # Set in Render dashboard secrets
+      
+      # Optional: Admin account (auto-created if not exists)
+      - key: ADMIN_USERNAME
+        value: admin
+      
+      - key: ADMIN_PASSWORD
+        scope: runtime
+        value: # Set in Render dashboard secrets
+      
+      # Optional: Default shop settings
+      - key: WHATSAPP_NUMBER
+        value: 919999999999
+      
+      - key: UPI_ID
+        value: abhinayamsilks@upi
+      
+      - key: UPI_PAYEE_NAME
+        value: Abhinayam Silks
+      
+      - key: INSTAGRAM_URL
+        value: https://www.instagram.com/abhinayamsilks
+      
+      # S3/Object Storage Configuration (Neon Storage)
+      - key: AWS_BUCKET_NAME
+        value: # Your Neon bucket name
+      
+      - key: AWS_ENDPOINT_URL_S3
+        value: # Your Neon S3 endpoint
+      
+      - key: AWS_REGION
+        value: us-east-2
+      
+      - key: AWS_ACCESS_KEY_ID
+        scope: runtime
+        value: # Set in Render dashboard secrets
+      
+      - key: AWS_SECRET_ACCESS_KEY
+        scope: runtime
+        value: # Set in Render dashboard secrets
+      
+      - key: UPLOAD_DIR
+        value: uploads
+    
+    # Bind to port 3000 (required for Express)
+    port: 3000
+    
+    # Health check to ensure service is running
+    healthCheckPath: /
+    
+    # Auto-deploy when main branch updates
+    autoDeploy: true
+    
+    # Build/deploy settings
+    buildFilter:
+      paths:
+        - src/**
+        - public/**
+        - scripts/**
+        - package.json
+        - package-lock.json
