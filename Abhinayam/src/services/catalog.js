@@ -185,20 +185,36 @@ function parseProduct(body) {
   };
 }
 
-async function addImages(db, productId, urls, alt) {
+async function addImages(db, productId, urls, alt, config = null) {
   const start = (await db.prepare('SELECT COALESCE(MAX(sort_order), -1) + 1 AS n FROM product_images WHERE product_id = ?').get(productId)).n;
   const insert = db.prepare('INSERT INTO product_images (product_id, url, alt, sort_order) VALUES (?, ?, ?, ?)');
-  for (const [index, url] of urls.entries()) await insert.run(productId, url, alt, start + index);
+  
+  // Get category_id for organized path
+  const product = await db.prepare('SELECT category_id FROM products WHERE id = ?').get(productId);
+  const categoryId = product?.category_id || '';
+  
+  for (const [index, url] of urls.entries()) {
+    let finalUrl = url;
+    
+    // Reorganize path to: categoryid/sareeid/image
+    if (config && categoryId) {
+      const { reorganizeUploadPath } = require('../uploads');
+      const newPath = `${categoryId}/${productId}`;
+      finalUrl = await reorganizeUploadPath(url, newPath, config);
+    }
+    
+    await insert.run(productId, finalUrl, alt, start + index);
+  }
 }
 
 const PRODUCT_COLUMNS = ['sku', 'name', 'slug', 'category_id', 'fabric', 'color', 'price', 'mrp', 'discount', 'description', 'stock_qty', 'is_featured', 'is_active'];
 
-async function createProduct(db, body, imageUrls = []) {
+async function createProduct(db, body, imageUrls = [], config = null) {
   const p = parseProduct(body);
   const { lastInsertRowid } = await db
     .prepare(`INSERT INTO products (${PRODUCT_COLUMNS.join(', ')}) VALUES (${PRODUCT_COLUMNS.map(() => '?').join(', ')}) RETURNING id`)
     .run(...PRODUCT_COLUMNS.map((k) => p[k]));
-  await addImages(db, lastInsertRowid, imageUrls, p.name);
+  await addImages(db, lastInsertRowid, imageUrls, p.name, config);
   return getProduct(db, { id: Number(lastInsertRowid) }, { includeInactive: true });
 }
 
@@ -209,7 +225,7 @@ async function logStockChange(db, product, newQty, { note = '', changedBy = 'sys
   ).run(product.id, product.sku, product.name, product.stock_qty, newQty, note, changedBy);
 }
 
-async function updateProduct(db, id, body, imageUrls = [], { changedBy } = {}) {
+async function updateProduct(db, id, body, imageUrls = [], { changedBy, config = null } = {}) {
   const before = await getProduct(db, { id }, { includeInactive: true });
   const p = parseProduct(body);
   await transaction(db, async () => {
@@ -217,7 +233,7 @@ async function updateProduct(db, id, body, imageUrls = [], { changedBy } = {}) {
       ...PRODUCT_COLUMNS.map((k) => p[k]), id
     );
     if (before.stock_qty !== p.stock_qty) await logStockChange(db, before, p.stock_qty, { changedBy, note: 'Edited in product form' });
-    await addImages(db, id, imageUrls, p.name);
+    await addImages(db, id, imageUrls, p.name, config);
   });
   return getProduct(db, { id }, { includeInactive: true });
 }
