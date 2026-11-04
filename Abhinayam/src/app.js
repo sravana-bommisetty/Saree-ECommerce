@@ -26,7 +26,7 @@ async function createApp({ db, config }) {
           scriptSrc: ["'self'"],
           styleSrc: ["'self'", 'https://fonts.googleapis.com'],
           fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-          imgSrc: ["'self'", 'data:', 'blob:'],
+          imgSrc: ["'self'", 'data:', 'blob:', 'https://br-sweet-recipe-bel6wz8n.storage.c-9.us-east-2.aws.neon.tech'],
           connectSrc: ["'self'"],
           upgradeInsecureRequests: config.isProd ? [] : null,
         },
