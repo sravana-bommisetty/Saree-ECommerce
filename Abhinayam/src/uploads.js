@@ -1,6 +1,6 @@
 'use strict';
 const crypto = require('node:crypto');
-const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, DeleteObjectCommand, CopyObjectCommand } = require('@aws-sdk/client-s3');
 const { Upload } = require('@aws-sdk/lib-storage');
 const multer = require('multer');
 const { badRequest } = require('./lib/validate');
@@ -226,7 +226,7 @@ async function reorganizeUploadPath(url, newPath, config) {
     console.log(`[uploads] Reorganizing: ${oldFileName} -> ${newFileName}`);
     
     // Copy to new location
-    const copyCmd = new (require('@aws-sdk/client-s3').CopyObjectCommand)({
+    const copyCmd = new CopyObjectCommand({
       Bucket: config.aws.bucket,
       CopySource: `${config.aws.bucket}/${oldFileName}`,
       Key: newFileName,

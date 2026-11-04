@@ -193,18 +193,26 @@ async function addImages(db, productId, urls, alt, config = null) {
   const product = await db.prepare('SELECT category_id FROM products WHERE id = ?').get(productId);
   const categoryId = product?.category_id || '';
   
+  console.log(`[catalog] addImages() - ProductID: ${productId}, URLs count: ${urls.length}, CategoryID: ${categoryId}`);
+  
   for (const [index, url] of urls.entries()) {
     let finalUrl = url;
+    
+    console.log(`[catalog] [${index + 1}/${urls.length}] Processing URL: ${url}`);
     
     // Reorganize path to: categoryid/sareeid/image
     if (config && categoryId) {
       const { reorganizeUploadPath } = require('../uploads');
       const newPath = `${categoryId}/${productId}`;
       finalUrl = await reorganizeUploadPath(url, newPath, config);
+      console.log(`[catalog] [${index + 1}/${urls.length}] Reorganized URL: ${finalUrl}`);
     }
     
+    console.log(`[catalog] [${index + 1}/${urls.length}] Saving to DB: ${finalUrl}`);
     await insert.run(productId, finalUrl, alt, start + index);
   }
+  
+  console.log(`[catalog] addImages() - Completed for ProductID: ${productId}`);
 }
 
 const PRODUCT_COLUMNS = ['sku', 'name', 'slug', 'category_id', 'fabric', 'color', 'price', 'mrp', 'discount', 'description', 'stock_qty', 'is_featured', 'is_active'];
