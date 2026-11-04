@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS categories (
   slug         TEXT NOT NULL UNIQUE,
   description  TEXT NOT NULL DEFAULT '',
   image_url    TEXT,
+  discount     NUMERIC(5,2) NOT NULL DEFAULT 0 CHECK (discount >= 0 AND discount <= 100),
   sort_order   INTEGER NOT NULL DEFAULT 0,
   created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -21,6 +22,7 @@ CREATE TABLE IF NOT EXISTS products (
   color        TEXT NOT NULL DEFAULT '',
   price        NUMERIC(10,2) NOT NULL CHECK (price >= 0),
   mrp          NUMERIC(10,2) CHECK (mrp IS NULL OR mrp >= 0),
+  discount     NUMERIC(5,2) NOT NULL DEFAULT 0 CHECK (discount >= 0 AND discount <= 100),
   description  TEXT NOT NULL DEFAULT '',
   stock_qty    INTEGER NOT NULL DEFAULT 0 CHECK (stock_qty >= 0),
   is_featured  BOOLEAN NOT NULL DEFAULT false,

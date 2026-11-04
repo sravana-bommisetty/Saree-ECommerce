@@ -14,7 +14,11 @@
   try {
     const [p, s] = await Promise.all([api(`/api/products/${encodeURIComponent(slug)}`), getSettings()]);
     const images = p.images.length ? p.images : [{ url: '/images/placeholder-saree.svg', alt: p.name }];
-    const mrp = p.mrp && p.mrp > p.price ? `<s>${inr(p.mrp)}</s>` : '';
+    // Show strikethrough MRP only when BOTH category and product discounts exist
+    const categoryDiscount = p.category_discount || 0;
+    const productDiscount = p.discount || 0;
+    const hasBothDiscounts = categoryDiscount > 0 && productDiscount > 0;
+    const mrp = (p.mrp && p.mrp > p.price && hasBothDiscounts) ? `<s>${inr(p.mrp)}</s>` : '';
 
     root.innerHTML = `
       <nav class="breadcrumb"><a href="/">Home</a> / <a href="/shop">Shop</a>${p.category_slug ? ` / <a href="/shop?category=${encodeURIComponent(p.category_slug)}">${escapeHtml(p.category_name)}</a>` : ''} / ${escapeHtml(p.name)}</nav>

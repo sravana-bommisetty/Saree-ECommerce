@@ -77,7 +77,11 @@
   function productCard(p) {
     const img = p.image_url || '/images/placeholder-saree.svg';
     const tag = !p.in_stock ? '<span class="tag out">Sold out</span>' : p.stock_qty <= 2 ? `<span class="tag">Only ${p.stock_qty} left</span>` : p.is_featured ? '<span class="tag">Bestseller</span>' : '';
-    const mrp = p.mrp && p.mrp > p.price ? `<s>${inr(p.mrp)}</s>` : '';
+    // Show strikethrough MRP only when BOTH category and product discounts exist
+    const categoryDiscount = p.category_discount || 0;
+    const productDiscount = p.discount || 0;
+    const hasBothDiscounts = categoryDiscount > 0 && productDiscount > 0;
+    const mrp = (p.mrp && p.mrp > p.price && hasBothDiscounts) ? `<s>${inr(p.mrp)}</s>` : '';
     return `
       <article class="card">
         <a class="card-img" href="/saree/${encodeURIComponent(p.slug)}">

@@ -8,6 +8,14 @@ services:
       # Use development locally so session cookies work over plain http://localhost.
       # In production, run behind HTTPS and set NODE_ENV=production.
       NODE_ENV: development
+    # The local network tampers with DNS for *.neon.tech (returns bogus IPs such
+    # as 77.113.x.x and unroutable IPv6), which breaks the Neon connection.
+    # Pin the Neon pooler hostname to its real AWS IP so Docker skips DNS.
+    # NOTE: if Neon ever rotates this IP, re-run:
+    #   nslookup ep-falling-glade-beib509k-pooler.c-9.us-east-2.aws.neon.tech 8.8.8.8
+    # and update the address below (use the 3.x.x.x AWS address).
+    extra_hosts:
+      - "ep-falling-glade-beib509k-pooler.c-9.us-east-2.aws.neon.tech:3.147.219.177"
     volumes:
       - abhinayam-data:/app/data
       - abhinayam-uploads:/app/uploads

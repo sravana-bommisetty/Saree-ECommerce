@@ -82,6 +82,13 @@ h1, h2, h3 { font-family: var(--serif); color: var(--maroon-dark); line-height: 
   .brand img { height: 44px; width: 44px; }
 }
 
+/* Mobile: Improve touch target sizes */
+@media (max-width: 800px) {
+  .btn { padding: 14px 24px; min-height: 48px; display: inline-flex; }
+  .icon-btn { font-size: 1.5rem; padding: 10px; min-width: 48px; min-height: 48px; }
+  .header-search button { min-width: 44px; min-height: 44px; }
+}
+
 /* Hero */
 .hero { background: radial-gradient(circle at 80% 20%, rgba(201,161,74,.25), transparent 50%),
   linear-gradient(135deg, var(--maroon-dark), var(--maroon) 60%, #8a2131); color: #fff; overflow: hidden; }
@@ -214,6 +221,24 @@ h1, h2, h3 { font-family: var(--serif); color: var(--maroon-dark); line-height: 
 .footer-bottom { border-top: 1px solid rgba(232, 211, 160, .2); text-align: center; padding: 14px 0; font-size: .82rem; }
 @media (max-width: 800px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 500px) { .footer-grid { grid-template-columns: 1fr; } }
+
+/* Ultra-small mobile phones (320px) */
+@media (max-width: 360px) {
+  .container { width: 95%; }
+  .hero-inner { padding: 30px 0; gap: 20px; }
+  .hero h1 { font-size: clamp(1.5rem, 4vw, 2.2rem); }
+  .hero p { font-size: 1rem; }
+  .hero-art { width: 160px; }
+  .section { padding: 40px 0; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+  .cat-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
+  .btn { padding: 12px 20px; font-size: 0.9rem; }
+  .header-inner { gap: 12px; padding: 8px 0; }
+  .brand img { height: 40px; width: 40px; }
+  .nav a { padding: 10px 0; }
+  .product { gap: 16px; }
+  .specs { gap: 6px 12px; }
+}
 
 /* Floating WhatsApp button */
 .wa-float { position: fixed; right: 18px; bottom: 18px; width: 56px; height: 56px; border-radius: 50%; background: var(--wa);

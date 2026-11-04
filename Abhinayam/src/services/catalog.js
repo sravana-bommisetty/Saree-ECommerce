@@ -13,6 +13,27 @@ const SORTS = {
   featured: 'p.is_featured DESC, p.id DESC',
 };
 
+/* ---------- Discount Calculation ---------- */
+
+/**
+ * Calculate MRP based on price and combined discounts
+ * Formula: MRP = Price / (1 - (categoryDiscount + productDiscount) / 100)
+ * @param {number} price - Selling price
+ * @param {number} categoryDiscount - Category discount percentage (0-100)
+ * @param {number} productDiscount - Product discount percentage (0-100)
+ * @returns {number|null} - Auto-calculated MRP or null if both discounts don't exist
+ */
+function calculateMrp(price, categoryDiscount = 0, productDiscount = 0) {
+  const cd = Number(categoryDiscount) || 0;
+  const pd = Number(productDiscount) || 0;
+  // MRP only auto-calculated when BOTH category and product discounts exist
+  if (cd <= 0 || pd <= 0) return null;
+  const totalDiscount = cd + pd;
+  if (totalDiscount >= 100) return null; // 100% discount = no MRP
+  const mrp = Math.round(price / (1 - totalDiscount / 100) * 100) / 100;
+  return mrp > price ? mrp : null; // MRP must be > price
+}
+
 /* ---------- Categories ---------- */
 
 async function listCategories(db, { includeEmpty = true } = {}) {
@@ -30,10 +51,12 @@ async function listCategories(db, { includeEmpty = true } = {}) {
 
 function parseCategory(body) {
   const name = str(body.name, 'Name', { required: true, max: 80 });
+  const discount = num(body.discount, 'Discount %', { min: 0, max: 100 }) ?? 0;
   return {
     name,
     slug: slugify(body.slug || name),
     description: str(body.description, 'Description', { max: 1000 }),
+    discount,
     sort_order: num(body.sort_order, 'Sort order', { integer: true }) ?? 0,
   };
 }
@@ -41,8 +64,8 @@ function parseCategory(body) {
 async function createCategory(db, body, imageUrl = null) {
   const c = parseCategory(body);
   const { lastInsertRowid } = await db
-    .prepare('INSERT INTO categories (name, slug, description, image_url, sort_order) VALUES (?, ?, ?, ?, ?) RETURNING id')
-    .run(c.name, c.slug, c.description, imageUrl, c.sort_order);
+    .prepare('INSERT INTO categories (name, slug, description, image_url, discount, sort_order) VALUES (?, ?, ?, ?, ?, ?) RETURNING id')
+    .run(c.name, c.slug, c.description, imageUrl, c.discount, c.sort_order);
   return db.prepare('SELECT * FROM categories WHERE id = ?').get(lastInsertRowid);
 }
 
@@ -50,8 +73,8 @@ async function updateCategory(db, id, body, imageUrl = null) {
   const existing = await db.prepare('SELECT * FROM categories WHERE id = ?').get(id);
   if (!existing) throw notFound('Category not found');
   const c = parseCategory(body);
-  await db.prepare('UPDATE categories SET name = ?, slug = ?, description = ?, image_url = ?, sort_order = ? WHERE id = ?').run(
-    c.name, c.slug, c.description, imageUrl ?? existing.image_url, c.sort_order, id
+  await db.prepare('UPDATE categories SET name = ?, slug = ?, description = ?, image_url = ?, discount = ?, sort_order = ? WHERE id = ?').run(
+    c.name, c.slug, c.description, imageUrl ?? existing.image_url, c.discount, c.sort_order, id
   );
   return db.prepare('SELECT * FROM categories WHERE id = ?').get(id);
 }
@@ -95,7 +118,7 @@ async function listProducts(db, query = {}, { includeInactive = false } = {}) {
   const total = (await db.prepare(`SELECT COUNT(*) AS n ${from}`).get(...params)).n;
   const items = (await db
     .prepare(
-      `SELECT p.*, c.name AS category_name, c.slug AS category_slug, ${FIRST_IMAGE}
+      `SELECT p.*, c.name AS category_name, c.slug AS category_slug, c.discount AS category_discount, ${FIRST_IMAGE}
        ${from} ORDER BY ${order} LIMIT ? OFFSET ?`
     )
     .all(...params, limit, (page - 1) * limit))
@@ -113,7 +136,7 @@ async function filterOptions(db) {
 async function getProduct(db, { id, slug }, { includeInactive = false } = {}) {
   const p = await db
     .prepare(
-      `SELECT p.*, c.name AS category_name, c.slug AS category_slug
+      `SELECT p.*, c.name AS category_name, c.slug AS category_slug, c.discount AS category_discount
          FROM products p LEFT JOIN categories c ON c.id = p.category_id
         WHERE ${id !== undefined ? 'p.id = ?' : 'p.slug = ?'}`
     )
@@ -126,6 +149,7 @@ async function getProduct(db, { id, slug }, { includeInactive = false } = {}) {
 function parseProduct(body) {
   const name = str(body.name, 'Name', { required: true, max: 150 });
   const price = num(body.price, 'Price', { required: true });
+  const productDiscount = num(body.discount, 'Product discount %', { min: 0, max: 100 }) ?? 0;
   const mrp = num(body.mrp, 'MRP');
   if (mrp !== null && mrp < price) throw badRequest('MRP must be greater than or equal to price');
   return {
@@ -137,6 +161,7 @@ function parseProduct(body) {
     color: str(body.color, 'Color', { max: 40 }),
     price,
     mrp,
+    discount: productDiscount,
     description: str(body.description, 'Description', { max: 5000 }),
     stock_qty: num(body.stock_qty, 'Stock', { integer: true }) ?? 0,
     is_featured: Boolean(bool(body.is_featured)),
@@ -150,7 +175,7 @@ async function addImages(db, productId, urls, alt) {
   for (const [index, url] of urls.entries()) await insert.run(productId, url, alt, start + index);
 }
 
-const PRODUCT_COLUMNS = ['sku', 'name', 'slug', 'category_id', 'fabric', 'color', 'price', 'mrp', 'description', 'stock_qty', 'is_featured', 'is_active'];
+const PRODUCT_COLUMNS = ['sku', 'name', 'slug', 'category_id', 'fabric', 'color', 'price', 'mrp', 'discount', 'description', 'stock_qty', 'is_featured', 'is_active'];
 
 async function createProduct(db, body, imageUrls = []) {
   const p = parseProduct(body);
@@ -241,6 +266,7 @@ async function deleteImage(db, imageId) {
 }
 
 module.exports = {
+  calculateMrp,
   listCategories, createCategory, updateCategory, deleteCategory,
   listProducts, filterOptions, getProduct, createProduct, updateProduct, updateStock, listStock, stockHistory,
   deleteProduct, deleteImage,

@@ -8,6 +8,19 @@
   const fmtDate = (s) => new Date(String(s).replace(' ', 'T') + 'Z').toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
   const pill = (v) => `<span class="pill ${esc(v)}">${esc(v)}</span>`;
 
+  // Calculate MRP based on price and combined discounts
+  // MRP = Price / (1 - (categoryDiscount + productDiscount) / 100)
+  function calculateMrp(price, categoryDiscount = 0, productDiscount = 0) {
+    const p = Number(price) || 0;
+    const cd = Number(categoryDiscount) || 0;
+    const pd = Number(productDiscount) || 0;
+    const totalDiscount = cd + pd;
+    if (totalDiscount <= 0) return null;
+    if (totalDiscount >= 100) return null;
+    const mrp = Math.round(p / (1 - totalDiscount / 100) * 100) / 100;
+    return mrp > p ? mrp : null;
+  }
+
   async function api(path, { method = 'GET', body } = {}) {
     const headers = { 'X-Requested-With': 'fetch' };
     if (body && !(body instanceof FormData)) headers['Content-Type'] = 'application/json';
@@ -162,7 +175,7 @@
     form.reset();
     showError(form, null);
     $('#category-dialog-title').textContent = c ? 'Edit category' : 'Add category';
-    if (c) ['name', 'description', 'sort_order'].forEach((k) => (form.elements[k].value = c[k] ?? ''));
+    if (c) ['name', 'description', 'sort_order', 'discount'].forEach((k) => (form.elements[k].value = c[k] ?? ''));
     $('#category-dialog').showModal();
   }
 
@@ -221,13 +234,14 @@
     editingProduct = id ? await api(`/products/${id}`) : null;
     $('#product-dialog-title').textContent = editingProduct ? 'Edit saree' : 'Add saree';
     if (editingProduct) {
-      ['name', 'sku', 'category_id', 'fabric', 'color', 'stock_qty', 'price', 'mrp', 'description'].forEach(
+      ['name', 'sku', 'category_id', 'fabric', 'color', 'stock_qty', 'price', 'discount', 'mrp', 'description'].forEach(
         (k) => (form.elements[k].value = editingProduct[k] ?? '')
       );
       form.is_active.checked = editingProduct.is_active;
       form.is_featured.checked = editingProduct.is_featured;
     } else {
       form.stock_qty.value = 1;
+      form.discount.value = 0;
     }
     renderImages();
     $('#product-dialog').showModal();
@@ -247,6 +261,33 @@
     renderImages();
     loadProducts();
   });
+
+  // Auto-calculate MRP when price, category discount, or product discount changes
+  const productForm = $('#product-form');
+  const mrpField = productForm.elements.mrp;
+  const priceField = productForm.elements.price;
+  const discountField = productForm.elements.discount;
+  const categoryField = productForm.elements.category_id;
+
+  function updateMrpPreview() {
+    const price = Number(priceField.value) || 0;
+    const productDiscount = Number(discountField.value) || 0;
+    // Find category discount from loaded categories
+    const catId = Number(categoryField.value);
+    let categoryDiscount = 0;
+    if (catId) {
+      const cat = categories.find((c) => c.id === catId);
+      categoryDiscount = cat?.discount || 0;
+    }
+    const mrp = calculateMrp(price, categoryDiscount, productDiscount);
+    if (mrp && !mrpField.value) {
+      mrpField.value = Math.round(mrp);
+    }
+  }
+
+  priceField.addEventListener('change', updateMrpPreview);
+  discountField.addEventListener('change', updateMrpPreview);
+  categoryField.addEventListener('change', updateMrpPreview);
 
   bindDialog($('#product-dialog'), async (form) => {
     const fd = new FormData(form);
