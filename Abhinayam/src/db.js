@@ -34,8 +34,12 @@ function openDb(databaseUrl) {
     
     async __init() {
       if (this.__initialized) return;
+      console.log('🔄 Initializing PostgreSQL connection...');
       this.__client = new Pool({
         connectionString: databaseUrl,
+        connectionTimeoutMillis: 30000,  // Increased to 30 seconds
+        idleTimeoutMillis: 30000,
+        max: 20,
         types: {
           getTypeParser(oid, format) {
             if (oid === 20 || oid === 1700) return Number;
@@ -45,12 +49,23 @@ function openDb(databaseUrl) {
         },
       });
       try {
+        console.log('🔄 Testing connection (timeout: 25s)...');
+        const testResult = await Promise.race([
+          this.__client.query('SELECT 1'),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Database connection timeout after 25 seconds')), 25000))
+        ]);
+        console.log('✅ Database connection established');
+        
+        console.log('🔄 Applying schema...');
         const schema = await fs.readFile(path.join(__dirname, '../db/schema-postgres.sql'), 'utf8');
         await this.__client.query(schema);
         this.__initialized = true;
+        console.log('✅ Schema applied successfully');
       } catch (error) {
-        await this.__client.end();
-        this.__client = null;
+        if (this.__client) {
+          await this.__client.end();
+          this.__client = null;
+        }
         throw error;
       }
       console.log('✅ Connected to PostgreSQL');

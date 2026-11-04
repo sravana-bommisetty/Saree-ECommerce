@@ -8,8 +8,10 @@ const db = openDb(config.databaseUrl);
 
 async function start() {
   try {
-    // Initialize PostgreSQL connection
+    // Initialize PostgreSQL connection with extended timeout
+    console.log('🔄 Connecting to database...');
     await db.__init();
+    console.log('✅ Database connected and schema ready');
 
     const app = await createApp({ db, config });
 
