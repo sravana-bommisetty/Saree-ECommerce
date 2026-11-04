@@ -105,3 +105,33 @@ CREATE TABLE IF NOT EXISTS settings (
   key    TEXT PRIMARY KEY,
   value  TEXT NOT NULL DEFAULT ''
 );
+
+-- ===== MIGRATIONS (for adding columns to existing tables) =====
+
+-- Add discount column to categories (if it doesn't already exist)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'categories' AND column_name = 'discount'
+  ) THEN
+    ALTER TABLE categories 
+    ADD COLUMN discount NUMERIC(5,2) NOT NULL DEFAULT 0 
+    CHECK (discount >= 0 AND discount <= 100);
+  END IF;
+END
+$$;
+
+-- Add discount column to products (if it doesn't already exist)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_name = 'products' AND column_name = 'discount'
+  ) THEN
+    ALTER TABLE products 
+    ADD COLUMN discount NUMERIC(5,2) NOT NULL DEFAULT 0 
+    CHECK (discount >= 0 AND discount <= 100);
+  END IF;
+END
+$$;
