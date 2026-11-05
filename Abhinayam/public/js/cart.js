@@ -50,8 +50,6 @@
     const btn = $('#place-order');
     btn.disabled = true;
     btn.textContent = 'Placing order…';
-    // Open the WhatsApp tab synchronously so popup blockers allow it, then point it at the order message.
-    const waWindow = window.open('', '_blank');
     try {
       const customer = Object.fromEntries(new FormData(form));
       const res = await api('/api/orders', {
@@ -66,14 +64,12 @@
       $('#wa-link').href = res.whatsappUrl;
       $('#upi-link').href = res.upiUrl;
       $('#upi-qr').src = res.upiQr;
-      if (waWindow) waWindow.location.href = res.whatsappUrl;
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      if (waWindow) waWindow.close();
       errorBox.textContent = err.message;
       errorBox.classList.remove('hidden');
       btn.disabled = false;
-      btn.textContent = 'Place order on WhatsApp';
+      btn.textContent = 'Continue to payment';
     }
   });
 
