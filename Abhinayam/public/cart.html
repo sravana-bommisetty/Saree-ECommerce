@@ -37,8 +37,8 @@
             <div class="field"><label for="o-pincode">Pincode *</label><input id="o-pincode" name="pincode" required inputmode="numeric" pattern="\d{6}" maxlength="6" autocomplete="postal-code"></div>
           </div>
           <div class="field"><label for="o-notes">Notes (blouse stitching, gift wrap…)</label><textarea id="o-notes" name="notes" rows="2" maxlength="500"></textarea></div>
-          <button class="btn btn-wa btn-block" id="place-order" type="submit">Place order on WhatsApp</button>
-          <p class="muted center">You'll be redirected to WhatsApp with your order details. Pay via UPI and share the screenshot to confirm.</p>
+          <button class="btn btn-wa btn-block" id="place-order" type="submit">Continue to payment</button>
+          <p class="muted center">Pay via UPI, then share your payment screenshot on WhatsApp to confirm your order.</p>
         </form>
       </section>
     </div>
@@ -47,14 +47,14 @@
       <h2>Thank you! Your order <span id="order-no"></span> is reserved 🎉</h2>
       <p>Total payable: <strong id="order-total"></strong></p>
       <ol class="steps">
-        <li>Tap <strong>Send order on WhatsApp</strong> so we receive your details.</li>
         <li>Pay via any UPI app – scan the QR code or tap <strong>Pay with UPI app</strong> (on mobile).</li>
+        <li>Tap <strong>Send order on WhatsApp</strong> so we receive your details.</li>
         <li>Share the payment screenshot on WhatsApp. We'll confirm and dispatch your saree.</li>
       </ol>
-      <p><a class="btn btn-wa" id="wa-link" target="_blank" rel="noopener" href="#">Send order on WhatsApp</a></p>
       <img class="qr" id="upi-qr" alt="UPI payment QR code" width="240" height="240">
       <p>UPI ID: <strong data-setting="upi_id"></strong></p>
       <p><a class="btn btn-gold" id="upi-link" href="#">Pay with UPI app</a></p>
+      <p><a class="btn btn-wa" id="wa-link" href="#">Send order on WhatsApp</a></p>
       <p><a href="/shop">Continue shopping</a></p>
     </section>
   </main>

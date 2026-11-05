@@ -161,6 +161,7 @@ h1, h2, h3 { font-family: var(--serif); color: var(--maroon-dark); line-height: 
 .shop-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-bottom: 18px; flex-wrap: wrap; }
 .shop-toolbar .muted { font-size: .9rem; }
 .filters-toggle { display: none; }
+.filters-close { display: none; }
 .pagination { display: flex; justify-content: center; gap: 8px; margin-top: 28px; }
 .pagination button { min-width: 40px; }
 .empty { text-align: center; padding: 48px 16px; color: var(--muted); }
