@@ -35,7 +35,7 @@ async function productPage(db, config, slug) {
   const p = await catalog.getProduct(db, { slug });
   const s = await getSettings(db);
   const url = `${config.baseUrl}/saree/${encodeURIComponent(p.slug)}`;
-  const image = p.image_url ? config.baseUrl + p.image_url : `${config.baseUrl}/images/logo.svg`;
+  const image = p.image_url ? config.baseUrl + p.image_url : `${config.baseUrl}/images/abhinayam-logo.jpeg`;
   const desc = `${p.name} – ${p.fabric} saree in ${p.color}. ${p.description}`.slice(0, 300);
   const jsonLd = {
     '@context': 'https://schema.org',

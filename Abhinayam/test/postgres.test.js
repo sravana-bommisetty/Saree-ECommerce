@@ -95,6 +95,26 @@ test('settings initialization awaits queries and propagates database failures', 
   await assert.rejects(ensureSettings({ prepare: () => ({ run: async () => { throw new Error('SQL failed'); } }) }, {}), /SQL failed/);
 });
 
+test('trackOrder matches normalized order number and phone and returns only public tracking fields', async () => {
+  const expected = { order_no: 'AS261106-A1B2C3', status: 'shipped', tracking_info: 'Courier: DTDC' };
+  const calls = [];
+  const db = {
+    prepare(sql) {
+      assert.equal(sql, 'SELECT order_no, status, tracking_info FROM orders WHERE order_no = ? AND phone IN (?, ?)');
+      return { get: async (...params) => {
+        calls.push(params);
+        return params[0] === expected.order_no && params.slice(1).includes('919876543210') ? expected : undefined;
+      } };
+    },
+  };
+
+  assert.deepEqual(await orders.trackOrder(db, { order_no: 'as261106-a1b2c3', phone: '+91 98765 43210' }), expected);
+  assert.deepEqual(calls[0], ['AS261106-A1B2C3', '919876543210', '9876543210']);
+  assert.deepEqual(await orders.trackOrder(db, { order_no: 'as261106-a1b2c3', phone: '9876543210' }), expected);
+  await assert.rejects(orders.trackOrder(db, { order_no: 'as261106-a1b2c3', phone: '9876543211' }), (error) => error.status === 404);
+  await assert.rejects(orders.trackOrder(db, { order_no: 'invalid', phone: '9876543210' }), (error) => error.status === 400);
+});
+
 test('PostgreSQL startup and application regression', { skip: !process.env.TEST_DATABASE_URL }, async (context) => {
   const schema = `regression_${crypto.randomUUID().replace(/-/g, '')}`;
   const control = new Client({ connectionString: process.env.TEST_DATABASE_URL });
@@ -186,6 +206,13 @@ test('PostgreSQL startup and application regression', { skip: !process.env.TEST_
     await assert.rejects(orders.createOrder(db, { customer, items: [{ productId: product.id, qty: 10 }] }), /Only 3 left/);
     assert.equal((await orders.listOrders(db)).length, 1);
     const order = (await orders.listOrders(db))[0];
+    const tracking = await request('POST', '/api/orders/track', { order_no: result.order.order_no, phone: customer.phone });
+    assert.equal(tracking.status, 200);
+    assert.deepEqual((await tracking.json()).order, { order_no: result.order.order_no, status: 'new', tracking_info: '' });
+    assert.equal((await request('POST', '/api/orders/track', { order_no: result.order.order_no, phone: '9876543211' })).status, 404);
+    assert.equal((await request('PATCH', `/api/admin/orders/${order.id}`, { status: 'shipped', tracking_info: 'DTDC https://courier.example/track/ABC123' })).status, 200);
+    const shipped = await request('POST', '/api/orders/track', { order_no: result.order.order_no, phone: customer.phone });
+    assert.deepEqual((await shipped.json()).order, { order_no: result.order.order_no, status: 'shipped', tracking_info: 'DTDC https://courier.example/track/ABC123' });
     await Promise.all([orders.updateOrder(db, order.id, { status: 'cancelled' }), orders.updateOrder(db, order.id, { status: 'cancelled' })]);
     assert.equal((await catalog.getProduct(db, { id: product.id })).stock_qty, 5);
     await assert.rejects(orders.updateOrder(db, order.id, { status: 'new' }), /cannot be re-opened/);

@@ -77,6 +77,21 @@ async function getOrder(db, id) {
   return order;
 }
 
+async function trackOrder(db, { order_no, phone: customerPhone } = {}) {
+  const orderNo = str(order_no, 'Order number', { required: true, max: 20 }).toUpperCase();
+  if (!/^AS\d{6}-[A-F0-9]{6}$/.test(orderNo)) throw badRequest('Enter a valid order number');
+  const normalizedPhone = phone(customerPhone);
+  const phoneCandidates = [normalizedPhone];
+  if (normalizedPhone.length === 10) phoneCandidates.push(`91${normalizedPhone}`);
+  else if (normalizedPhone.length === 12 && normalizedPhone.startsWith('91')) phoneCandidates.push(normalizedPhone.slice(2));
+  const phonePlaceholders = phoneCandidates.map(() => '?').join(', ');
+  const order = await db
+    .prepare(`SELECT order_no, status, tracking_info FROM orders WHERE order_no = ? AND phone IN (${phonePlaceholders})`)
+    .get(orderNo, ...phoneCandidates);
+  if (!order) throw notFound('We could not find an order matching those details');
+  return order;
+}
+
 function listOrders(db, { status, q } = {}) {
   const where = [];
   const params = [];
@@ -134,4 +149,4 @@ async function dashboardStats(db) {
   };
 }
 
-module.exports = { createOrder, getOrder, listOrders, updateOrder, dashboardStats, newOrderNo, ORDER_STATUSES, PAYMENT_STATUSES };
+module.exports = { createOrder, getOrder, trackOrder, listOrders, updateOrder, dashboardStats, newOrderNo, ORDER_STATUSES, PAYMENT_STATUSES };

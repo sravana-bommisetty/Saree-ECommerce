@@ -17,6 +17,12 @@ function publicRoutes(db) {
   r.get('/products/:slug', async (req, res) => res.json(await catalog.getProduct(db, { slug: req.params.slug })));
 
   r.post(
+    '/orders/track',
+    rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: 'draft-7', legacyHeaders: false }),
+    async (req, res) => res.json({ order: await orders.trackOrder(db, req.body || {}) })
+  );
+
+  r.post(
     '/orders',
     rateLimit({ windowMs: 15 * 60 * 1000, limit: 20, standardHeaders: 'draft-7', legacyHeaders: false }),
     async (req, res) => {

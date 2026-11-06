@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Admin | Abhinayam Silks</title>
   <meta name="robots" content="noindex, nofollow">
-  <link rel="icon" href="/images/favicon.svg?v=2" type="image/svg+xml">
+  <link rel="icon" href="/images/abhinayam-logo.jpeg?v=3" type="image/jpeg">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/admin.css">
 </head>
@@ -13,7 +13,7 @@
   <!-- Login -->
   <section id="login-view" class="login hidden">
     <form id="login-form" class="panel">
-      <img src="/images/logo.svg" alt="Abhinayam Silks" width="220" height="184">
+      <img src="/images/abhinayam-logo.jpeg" alt="Abhinayam Silks" width="220" height="220">
       <h1 id="login-title">Admin login</h1>
       <div id="login-error" class="alert alert-error hidden" role="alert"></div>
       <div class="field"><label for="l-user">Username</label><input id="l-user" name="username" required autocomplete="username"></div>
@@ -25,7 +25,7 @@
   <!-- App -->
   <div id="app-view" class="admin-shell hidden">
     <aside class="admin-nav">
-      <img src="/images/logo.svg" alt="Abhinayam Silks" width="180" height="151">
+      <img src="/images/abhinayam-logo.jpeg" alt="Abhinayam Silks" width="180" height="180">
       <p class="who" id="who"></p>
       <nav id="tabs">
         <button data-tab="dashboard" data-roles="admin">📊 Dashboard</button>
@@ -192,7 +192,7 @@
           <select name="payment_status"><option>pending</option><option>paid</option><option>refunded</option></select>
         </div>
         <div class="field"><label>UPI transaction / reference no.</label><input name="payment_ref" maxlength="100"></div>
-        <div class="field"><label>Courier &amp; tracking info</label><input name="tracking_info" maxlength="300"></div>
+        <div class="field"><label>Courier &amp; tracking info</label><input name="tracking_info" maxlength="300"><small class="muted">Include the courier, tracking number, and full tracking URL when available.</small></div>
       </div>
       <p class="muted">Cancelling an order puts its sarees back into stock.</p>
       <div class="dialog-actions">

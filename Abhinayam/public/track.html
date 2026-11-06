@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Track Your Order | Abhinayam Silks</title>
+  <meta name="description" content="Check your Abhinayam Silks order status and courier tracking details.">
+  <link rel="canonical" href="/track">
+  <meta name="theme-color" content="#6e1423">
+  <link rel="icon" href="/images/abhinayam-logo.jpeg?v=3" type="image/jpeg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Poppins:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="site-header"></div>
+  <div class="page-head"><h1>Track Your Order</h1><p>Check your order status and courier details</p></div>
+  <main class="section container track-page">
+    <section class="panel track-panel">
+      <h2>Find your order</h2>
+      <p class="muted">Enter the order number and phone number used at checkout.</p>
+      <form id="track-form" class="track-form">
+        <div id="track-error" class="alert alert-error" role="alert" hidden></div>
+        <div class="field">
+          <label for="track-order-input">Order number</label>
+          <input id="track-order-input" name="order_no" required maxlength="15" pattern="AS[0-9]{6}-[A-Fa-f0-9]{6}" autocomplete="off" autocapitalize="characters" placeholder="AS261106-A1B2C3">
+        </div>
+        <div class="field">
+          <label for="track-phone-input">Phone number</label>
+          <input id="track-phone-input" name="phone" type="tel" inputmode="tel" autocomplete="tel" required minlength="10" maxlength="20" placeholder="Phone number used at checkout">
+        </div>
+        <button class="btn btn-gold" type="submit">Track order</button>
+      </form>
+      <section id="track-result" class="track-result" aria-live="polite" hidden>
+        <h2>Order details</h2>
+        <dl class="track-summary">
+          <div><dt>Order number</dt><dd id="track-order-number"></dd></div>
+          <div><dt>Status</dt><dd id="track-status"></dd></div>
+          <div id="track-info-row" hidden><dt>Courier details</dt><dd id="track-info"></dd></div>
+        </dl>
+        <p id="track-pending" class="muted" hidden>Courier details have not been added yet. Please check back after dispatch.</p>
+        <a id="track-link" class="btn btn-outline track-link" href="#" target="_blank" rel="noopener" hidden>Open courier tracking</a>
+      </section>
+    </section>
+  </main>
+  <div id="site-footer"></div>
+  <script src="/js/common.js"></script>
+  <script src="/js/track.js"></script>
+</body>
+</html>
